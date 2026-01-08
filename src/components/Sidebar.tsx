@@ -27,7 +27,16 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
     useEffect(() => {
         if (!user) return;
         const unsubscribe = subscribeToUserSettings(user.uid, (settings) => {
-            setSubMenus(settings);
+            if (settings && Object.keys(settings).length > 0) {
+                setSubMenus(settings);
+            } else {
+                setSubMenus({
+                    'work': ['회의', '개발', '기획', '미팅'],
+                    'dev': ['프론트엔드', '백엔드', '배포', '에러'],
+                    'issue': ['버그', '긴급', '수정'],
+                    'idea': ['기능', '디자인']
+                });
+            }
         });
         return () => unsubscribe();
     }, [user]);

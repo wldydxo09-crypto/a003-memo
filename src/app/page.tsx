@@ -319,12 +319,8 @@ export default function Home() {
                       <p style={{ fontSize: '0.8rem', color: '#aaa' }}>일정 동기화</p>
                     </div>
                     <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/api/auth/login');
-                          const data = await res.json();
-                          if (data.url) window.location.href = data.url;
-                        } catch (e) { alert('오류 발생'); }
+                      onClick={() => {
+                        window.location.href = '/api/auth/google';
                       }}
                       style={{ padding: '6px 12px', background: 'var(--primary)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
                     >
