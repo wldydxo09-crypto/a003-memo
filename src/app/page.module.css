@@ -100,6 +100,7 @@
   .main {
     margin-left: 0;
     padding-bottom: 0px;
+    overflow-x: hidden;
     /* Removed padding-bottom 80px since sidebar is now drawer */
   }
 
