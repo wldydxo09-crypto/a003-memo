@@ -1,0 +1,277 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    padding-bottom: 50px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 1. Status Stats Board */
+.statsBoard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+}
+
+.statCard {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    background: var(--bg-glass-hover);
+}
+
+.statCount {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.statLabel {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* 2. Main Layout (Left: Stats+Cal+Sched, Right: News) */
+.mainLayout {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    /* Left Panel takes 75%, News 25% */
+    gap: var(--spacing-lg);
+    align-items: stretch;
+    /* Stretch both columns to match height */
+}
+
+.leftPanel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.rightPanel {
+    display: flex;
+    flex-direction: column;
+    /* News widget will expand here */
+}
+
+/* Content Grid (Calendar + Schedule inside Left Panel) */
+.contentGrid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--spacing-lg);
+    align-items: stretch;
+}
+
+.calendarSection {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm);
+    /* Compact padding */
+}
+
+/* Quick Access (Menu Cards) */
+.quickAccess {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.sectionTitle {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.menuCard {
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-medium);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.menuCard:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.menuCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--bg-tertiary);
+    /* Default accent */
+    transition: background 0.3s;
+}
+
+.menuCard:hover::before {
+    background: var(--primary);
+}
+
+.menuIcon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.menuTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.menuDesc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* Schedule Board */
+.scheduleBoard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.scheduleCard {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    min-height: 300px;
+}
+
+.scheduleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.viewSelect {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    min-width: 100px;
+}
+
+.viewSelect:hover {
+    border-color: var(--primary);
+}
+
+.viewSelect option {
+    background: #1e1e2d;
+    /* Hardcode dark bg for options as standardized */
+    color: white;
+}
+
+.eventList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.eventItem {
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.eventTime {
+    font-size: 0.75rem;
+    color: var(--primary-light);
+    font-weight: 600;
+}
+
+.eventTitle {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.emptyState {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--spacing-xl);
+    font-size: 0.9rem;
+}
+
+/* Mobile */
+/* Mobile */
+@media (max-width: 1200px) {
+
+    /* Tablet / Small Desktop: Stack News below */
+    .mainLayout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1024px) {
+    .contentGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .statsBoard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .statsBoard {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,344 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { subscribeToFeatures, addFeature, updateFeature, deleteFeature, FeatureItem } from '@/lib/firebaseService';
+import styles from './InventoryDashboard.module.css';
+import MermaidRenderer from './MermaidRenderer';
+
+interface InventoryDashboardProps {
+    userId: string;
+}
+
+const INITIAL_FORM = {
+    name: '',
+    description: '',
+    status: 'planned' as const,
+    type: 'frontend' as const,
+    priority: 'medium' as const,
+    techStack: '', // Comma separated string for input
+};
+
+export default function InventoryDashboard({ userId }: InventoryDashboardProps) {
+    const [activeTab, setActiveTab] = useState<'list' | 'architecture'>('list');
+    const [features, setFeatures] = useState<FeatureItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [formData, setFormData] = useState(INITIAL_FORM);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Architecture State
+    const [mermaidCode, setMermaidCode] = useState<string>('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    // Initial Load
+    useEffect(() => {
+        const unsubscribe = subscribeToFeatures(userId, (items) => {
+            setFeatures(items);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    const handleOpenModal = (feature?: FeatureItem) => {
+        if (feature) {
+            setEditingId(feature.id || null);
+            setFormData({
+                name: feature.name,
+                description: feature.description,
+                status: feature.status as any,
+                type: feature.type as any,
+                priority: feature.priority as any,
+                techStack: feature.techStack.join(', '),
+            });
+        } else {
+            setEditingId(null);
+            setFormData(INITIAL_FORM);
+        }
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingId(null);
+        setFormData(INITIAL_FORM);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+        try {
+            await deleteFeature(id);
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('삭제 실패');
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.name.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            const techStackArray = formData.techStack
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s);
+
+            const data = {
+                userId,
+                name: formData.name,
+                description: formData.description,
+                status: formData.status,
+                type: formData.type,
+                priority: formData.priority,
+                techStack: techStackArray,
+                progress: formData.status === 'completed' ? 100 : 0,
+            };
+
+            if (editingId) {
+                await updateFeature(editingId, data);
+            } else {
+                await addFeature(data);
+            }
+            handleCloseModal();
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('저장 실패');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGenerateArchitecture = async () => {
+        if (features.length === 0) {
+            alert('등록된 기능이 없습니다. 먼저 기능을 등록해주세요.');
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const response = await fetch('/api/architecture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ features }),
+            });
+            const data = await response.json();
+
+            if (response.ok && data.mermaidCode) {
+                setMermaidCode(data.mermaidCode);
+            } else {
+                throw new Error(data.error || 'Failed to generate');
+            }
+        } catch (error) {
+            console.error('Architecture Generation Error:', error);
+            alert('아키텍처 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed': return '#10b981'; // Green
+            case 'in-progress': return '#3b82f6'; // Blue
+            case 'maintenance': return '#f59e0b'; // Orange
+            default: return '#6b7280'; // Gray
+        }
+    };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'completed': return '완료';
+            case 'in-progress': return '진행중';
+            case 'maintenance': return '보수';
+            case 'planned': return '계획';
+            default: return status;
+        }
+    };
+
+    return (
+        <div className={styles.container}>
+            {/* Header / Tabs */}
+            <div className={styles.header}>
+                <h1 className={styles.title}>📦 기능 보관함 (Feature Inventory)</h1>
+                <div className={styles.tabs}>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'list' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('list')}
+                    >
+                        목록
+                    </button>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'architecture' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('architecture')}
+                    >
+                        청사진 (AI Architecture)
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className={styles.content}>
+                {loading ? (
+                    <div className={styles.loading}>불러오는 중...</div>
+                ) : activeTab === 'list' ? (
+                    <>
+                        <button className={styles.addBtn} onClick={() => handleOpenModal()}>
+                            <span>+ 새 기능 등록하기</span>
+                        </button>
+
+                        <div className={styles.grid}>
+                            {features.map(f => (
+                                <div key={f.id} className={styles.card}>
+                                    <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                        <span
+                                            className={styles.statusBadge}
+                                            style={{ backgroundColor: `${getStatusColor(f.status)}20`, color: getStatusColor(f.status) }}
+                                        >
+                                            {getStatusText(f.status)}
+                                        </span>
+                                        <div style={{ gap: '5px', display: 'flex' }}>
+                                            <button
+                                                onClick={() => handleOpenModal(f)}
+                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
+                                            >✏️</button>
+                                            <button
+                                                onClick={() => f.id && handleDelete(f.id)}
+                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
+                                            >🗑️</button>
+                                        </div>
+                                    </div>
+                                    <h3 className={styles.cardTitle}>{f.name}</h3>
+                                    <p className={styles.cardDesc}>{f.description}</p>
+
+                                    <div className={styles.cardFooter}>
+                                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                                            {f.techStack.slice(0, 3).map(tech => (
+                                                <span key={tech} style={{ fontSize: '0.75rem', padding: '2px 6px', background: '#eee', borderRadius: '4px', color: '#555' }}>
+                                                    {tech}
+                                                </span>
+                                            ))}
+                                            {f.techStack.length > 3 && <span style={{ fontSize: '0.75rem' }}>+{f.techStack.length - 3}</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className={styles.architectureContainer}>
+                        <div className={styles.architectureHeader} style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>시스템 청사진 (Blueprint)</h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>AI가 등록된 기능을 분석하여 시스템 구조도를 그려줍니다.</p>
+                            </div>
+                            <button
+                                className={styles.submitBtn}
+                                onClick={handleGenerateArchitecture}
+                                disabled={isGenerating}
+                            >
+                                {isGenerating ? '🔍 분석 및 생성 중...' : (mermaidCode ? '🔄 다시 그리기' : '✨ 청사진 생성하기')}
+                            </button>
+                        </div>
+
+                        {mermaidCode ? (
+                            <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', padding: '10px', background: 'white' }}>
+                                <MermaidRenderer chart={mermaidCode} />
+                            </div>
+                        ) : (
+                            <div style={{
+                                padding: '60px',
+                                textAlign: 'center',
+                                background: 'var(--bg-glass)',
+                                borderRadius: '12px',
+                                border: '1px dashed var(--border-color)'
+                            }}>
+                                <span style={{ fontSize: '3rem', display: 'block', marginBottom: '20px', opacity: 0.5 }}>🗺️</span>
+                                <p style={{ color: 'var(--text-secondary)' }}>
+                                    아직 생성된 청사진이 없습니다.<br />
+                                    먼저 '목록' 탭에서 기능을 등록한 후, 청사진을 생성해보세요.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className={styles.modalOverlay} onClick={handleCloseModal}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <h3 className={styles.modalTitle}>{editingId ? '기능 수정' : '새 기능 등록'}</h3>
+                        <form onSubmit={handleSubmit}>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>기능 이름</label>
+                                <input
+                                    className={styles.input}
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="예: 구글 캘린더 연동"
+                                    required
+                                />
+                            </div>
+                            {/* ... Rest of form ... */}
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>상태</label>
+                                <select
+                                    className={styles.select}
+                                    value={formData.status}
+                                    onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                                >
+                                    <option value="planned">계획됨 (Planned)</option>
+                                    <option value="in-progress">개발중 (In Progress)</option>
+                                    <option value="completed">완료 (Completed)</option>
+                                    <option value="maintenance">유지보수 (Maintenance)</option>
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>유형</label>
+                                <select
+                                    className={styles.select}
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value as any })}
+                                >
+                                    <option value="frontend">Frontend (UI)</option>
+                                    <option value="backend">Backend (API)</option>
+                                    <option value="database">Database</option>
+                                    <option value="external">External Service</option>
+                                    <option value="other">기타</option>
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>설명</label>
+                                <textarea
+                                    className={styles.textarea}
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="기능에 대한 설명..."
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>사용 기술 (콤마 구분)</label>
+                                <input
+                                    className={styles.input}
+                                    value={formData.techStack}
+                                    onChange={e => setFormData({ ...formData, techStack: e.target.value })}
+                                    placeholder="예: React, Firebase"
+                                />
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button type="button" className={styles.cancelBtn} onClick={handleCloseModal}>취소</button>
+                                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                                    {isSubmitting ? '저장 중...' : '저장'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

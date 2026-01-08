@@ -1,0 +1,104 @@
+.container {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.navBtn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.navBtn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    flex: 1;
+    align-content: start;
+    /* Prevent vertical stretching */
+}
+
+.weekday {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-bottom: var(--spacing-sm);
+    font-weight: 500;
+}
+
+.day {
+    aspect-ratio: 1.2;
+    /* Slightly flatter */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    position: relative;
+    border: 1px solid transparent;
+    padding: 2px;
+}
+
+.day:hover {
+    background: var(--bg-tertiary);
+}
+
+.day.today {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+    border-color: rgba(99, 102, 241, 0.3);
+    font-weight: 700;
+}
+
+.day.selected {
+    background: var(--primary);
+    color: white;
+}
+
+.day.empty {
+    cursor: default;
+    background: transparent !important;
+}
+
+.eventDot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 4px;
+}
