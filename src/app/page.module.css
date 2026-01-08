@@ -102,6 +102,8 @@
   .expanded {
     margin-left: 0 !important;
     padding-bottom: 0px;
+    width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
     /* Removed padding-bottom 80px since sidebar is now drawer */
   }
