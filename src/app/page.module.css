@@ -95,17 +95,21 @@
   margin-bottom: var(--spacing-sm);
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+/* Mobile & Tablet */
+@media (max-width: 900px) {
 
   .main,
-  .expanded {
+  .expanded,
+  .layout .main,
+  .layout .expanded {
     margin-left: 0 !important;
     padding-bottom: 0px;
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-    /* Removed padding-bottom 80px since sidebar is now drawer */
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    transition: none !important;
+    /* Disable animation on mobile to prevent shifts */
+    transform: none !important;
   }
 
   .header {
