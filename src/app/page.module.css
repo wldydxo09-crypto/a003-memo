@@ -97,8 +97,10 @@
 
 /* Mobile */
 @media (max-width: 768px) {
-  .main {
-    margin-left: 0;
+
+  .main,
+  .expanded {
+    margin-left: 0 !important;
     padding-bottom: 0px;
     overflow-x: hidden;
     /* Removed padding-bottom 80px since sidebar is now drawer */
