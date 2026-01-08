@@ -265,7 +265,7 @@ export default function Home() {
                 </section>
 
                 {/* Sub-menu (Tag) Manager Section */}
-                <SubMenuSettingsManager workMenus={workMenus} />
+                <SubMenuSettingsManager workMenus={workMenus} userId={user.uid} />
 
                 {/* AI Settings */}
                 <section style={{ background: 'var(--bg-secondary)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
