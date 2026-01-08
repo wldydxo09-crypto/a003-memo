@@ -18,24 +18,19 @@ interface SidebarProps {
     onTagSelect: (tag: string) => void;
 }
 
+import { subscribeToUserSettings } from '@/lib/firebaseService';
+
 export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsCollapsed, onOpenWrite, user, isMobileOpen, onCloseMobile, workMenus, onSearch, onTagSelect }: SidebarProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [subMenus, setSubMenus] = useState<Record<string, string[]>>({});
 
     useEffect(() => {
-        const loadSubMenus = () => {
-            const saved = localStorage.getItem('smartWork_subMenus');
-            if (saved) {
-                try { setSubMenus(JSON.parse(saved)); } catch (e) { }
-            }
-        };
-        loadSubMenus();
-        // Poll for changes? Or rely on page refresh? 
-        // For better UX, we could listen to storage events or just expect user to refresh after editing settings.
-        // Or add a custom event listener if we want instant updates. For now, simple load.
-        window.addEventListener('storage', loadSubMenus);
-        return () => window.removeEventListener('storage', loadSubMenus);
-    }, []);
+        if (!user) return;
+        const unsubscribe = subscribeToUserSettings(user.uid, (settings) => {
+            setSubMenus(settings);
+        });
+        return () => unsubscribe();
+    }, [user]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();

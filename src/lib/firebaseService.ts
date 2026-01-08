@@ -10,6 +10,7 @@ import {
     deleteDoc,
     doc,
     updateDoc,
+    setDoc, // Added for user settings
     getDocs, // Added
     limit,   // Added
     Timestamp,
@@ -277,8 +278,34 @@ export function subscribeToFeatures(
         });
 
         callback(items);
-    }, (error) => {
-        console.error("Error subscribing features:", error);
-        callback([]); // Return empty list on error to stop loading spinner
+    });
+}
+
+// --- User Settings (Submenus) ---
+
+const SETTINGS_COLLECTION = 'user_settings';
+
+export async function saveUserSettings(
+    userId: string,
+    subMenus: Record<string, string[]>
+): Promise<void> {
+    const docRef = doc(db, SETTINGS_COLLECTION, userId);
+    await setDoc(docRef, {
+        subMenus,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+export function subscribeToUserSettings(
+    userId: string,
+    callback: (subMenus: Record<string, string[]>) => void
+): () => void {
+    const docRef = doc(db, SETTINGS_COLLECTION, userId);
+    return onSnapshot(docRef, (doc) => {
+        if (doc.exists()) {
+            callback(doc.data().subMenus || {});
+        } else {
+            callback({});
+        }
     });
 }

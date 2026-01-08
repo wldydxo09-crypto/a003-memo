@@ -1,39 +1,40 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import styles from './SettingsModal.module.css'; // I'll assume same styles or create basic css inline for now to save steps? 
-// Better consistent: Create css too. But let's reuse WriteModal styles if possible? No, specific css is better.
-// I'll use inline styles for speed as user cares about functionality primarily now.
+import styles from './SettingsModal.module.css';
 import { MENUS } from '@/lib/menus';
+import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    userId: string;
 }
 
-export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose, userId }: SettingsModalProps) {
     const [subMenus, setSubMenus] = useState<{ [key: string]: string[] }>({});
     const [selectedMenu, setSelectedMenu] = useState('dev');
     const [newTag, setNewTag] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
-            const saved = localStorage.getItem('smartWork_subMenus');
-            if (saved) {
-                setSubMenus(JSON.parse(saved));
-            } else {
-                // Default defaults
-                setSubMenus({
-                    'dev': ['Frontend', 'Backend', 'Database', 'Deploy'],
-                    'issue': ['Critical', 'Minor']
-                });
-            }
+        if (isOpen && userId) {
+            const unsubscribe = subscribeToUserSettings(userId, (settings) => {
+                setSubMenus(settings);
+            });
+            return () => unsubscribe();
         }
-    }, [isOpen]);
+    }, [isOpen, userId]);
 
-    const saveSettings = (newSettings: { [key: string]: string[] }) => {
+    const saveSettings = async (newSettings: { [key: string]: string[] }) => {
+        // Optimistic update
         setSubMenus(newSettings);
-        localStorage.setItem('smartWork_subMenus', JSON.stringify(newSettings));
+        // Save to Firestore
+        try {
+            await saveUserSettings(userId, newSettings);
+        } catch (e) {
+            console.error("Failed to save settings:", e);
+            alert("설정 저장 실패");
+        }
     };
 
     const addTag = () => {

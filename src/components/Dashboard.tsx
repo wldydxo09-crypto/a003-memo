@@ -195,7 +195,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     return (
         <div className={styles.container}>
 
-            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} userId={userId} />
 
             <div className={styles.mainLayout}>
                 {/* Left Panel: Stats + Calendar + Schedule */}

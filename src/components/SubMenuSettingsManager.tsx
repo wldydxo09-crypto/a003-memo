@@ -1,30 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService';
 
 interface SubMenuSettingsManagerProps {
     workMenus: { id: string; name: string; icon: string }[];
+    userId: string;
 }
 
-export default function SubMenuSettingsManager({ workMenus }: SubMenuSettingsManagerProps) {
+export default function SubMenuSettingsManager({ workMenus, userId }: SubMenuSettingsManagerProps) {
     const [subMenus, setSubMenus] = useState<Record<string, string[]>>({});
     const [selectedMenu, setSelectedMenu] = useState(workMenus[0]?.id || 'work');
     const [newTag, setNewTag] = useState('');
 
     useEffect(() => {
-        const saved = localStorage.getItem('smartWork_subMenus');
-        if (saved) {
-            setSubMenus(JSON.parse(saved));
-        } else {
-            // Defaults
-            setSubMenus({
-                'work': ['회의', '개발', '기획', '미팅'],
-                'dev': ['프론트엔드', '백엔드', '배포', '에러'],
-                'issue': ['버그', '긴급', '수정'],
-                'idea': ['기능', '디자인']
-            });
-        }
-    }, []);
+        // Subscribe to Firestore settings
+        const unsubscribe = subscribeToUserSettings(userId, (settings) => {
+            if (Object.keys(settings).length > 0) {
+                setSubMenus(settings);
+            } else {
+                // Defaults if no settings exist yet
+                setSubMenus({
+                    'work': ['회의', '개발', '기획', '미팅'],
+                    'dev': ['프론트엔드', '백엔드', '배포', '에러'],
+                    'issue': ['버그', '긴급', '수정'],
+                    'idea': ['기능', '디자인']
+                });
+            }
+        });
+        return () => unsubscribe();
+    }, [userId]);
 
     // Ensure selectedMenu is valid when workMenus changes
     useEffect(() => {
@@ -33,9 +38,16 @@ export default function SubMenuSettingsManager({ workMenus }: SubMenuSettingsMan
         }
     }, [workMenus, selectedMenu]);
 
-    const saveSubMenus = (newSubMenus: Record<string, string[]>) => {
+    const saveSubMenus = async (newSubMenus: Record<string, string[]>) => {
+        // Optimistic update
         setSubMenus(newSubMenus);
-        localStorage.setItem('smartWork_subMenus', JSON.stringify(newSubMenus));
+        // Save to Firestore
+        try {
+            await saveUserSettings(userId, newSubMenus);
+        } catch (e) {
+            console.error("Failed to save settings:", e);
+            alert("설정 저장 실패");
+        }
     };
 
     const addTag = () => {
