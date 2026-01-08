@@ -3,7 +3,7 @@ import { google } from 'googleapis';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 // This must match the authorized redirect URI in Google Console
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 const REDIRECT_URI = `${BASE_URL}/api/auth/callback/google`;
 
 export function getOAuthClient() {
