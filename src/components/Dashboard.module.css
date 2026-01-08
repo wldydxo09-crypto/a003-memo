@@ -4,6 +4,10 @@
     gap: var(--spacing-xl);
     padding-bottom: 50px;
     animation: fadeIn 0.5s ease-out;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    /* Safety */
 }
 
 @keyframes fadeIn {
@@ -23,39 +27,10 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-md);
+    width: 100%;
 }
 
-.statCard {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-}
-
-.statCard:hover {
-    transform: translateY(-2px);
-    background: var(--bg-glass-hover);
-}
-
-.statCount {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: var(--spacing-xs);
-    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.statLabel {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
+/* ... existing code ... */
 
 /* 2. Main Layout (Left: Stats+Cal+Sched, Right: News) */
 .mainLayout {
@@ -65,6 +40,8 @@
     gap: var(--spacing-lg);
     align-items: stretch;
     /* Stretch both columns to match height */
+    width: 100%;
+    max-width: 100%;
 }
 
 .leftPanel {
