@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// Switching to gemini-pro (stable v1.0) to resolve 404 errors
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+// Using gemini-2.5-flash as confirmed available via debug-models
+const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 export async function POST(request: NextRequest) {
     try {
