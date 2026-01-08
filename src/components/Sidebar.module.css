@@ -218,93 +218,92 @@
 /* Mobile Drawer Styles */
 /* Mobile Drawer Styles */
 @media (max-width: 900px) {
-        {
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: auto;
-            transform: translateX(-100%);
-            flex-direction: column;
-            border-right: 1px solid var(--glass-border);
-            padding: 0;
-            z-index: 1000;
-            background: var(--bg-secondary);
-            /* Solid background for mobile drawer */
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .sidebar.mobileOpen {
-            transform: translateX(0);
-        }
-
-        .header {
-            display: flex;
-            padding: var(--spacing-md);
-        }
-
-        .writeSection,
-        .footer {
-            display: flex;
-            /* Restore these */
-        }
-
-        .writeSection {
-            padding: var(--spacing-md);
-        }
-
-        .footer {
-            padding: var(--spacing-md);
-        }
-
-        .navList {
-            flex-direction: column;
-            padding: var(--spacing-md);
-            gap: var(--spacing-xs);
-        }
-
-        .navItem {
-            flex-direction: row;
-            gap: var(--spacing-md);
-            padding: 12px 16px;
-            justify-content: flex-start;
-            border-radius: var(--radius-md);
-            font-size: 0.95rem;
-        }
-
-        .navIcon {
-            font-size: 1.25rem;
-        }
-
-        .navText {
-            display: block !important;
-            font-size: 0.95rem;
-        }
-
-        /* Hide the desktop collapse button on mobile */
-        .collapseBtn {
-            display: none;
-        }
-    }
-
-    /* Overlay for Mobile */
-    .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
+    .sidebar {
+        width: 260px;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        z-index: 900;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: auto;
+        transform: translateX(-100%);
+        flex-direction: column;
+        border-right: 1px solid var(--glass-border);
+        padding: 0;
+        z-index: 1000;
+        background: var(--bg-secondary);
+        /* Solid background for mobile drawer */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .overlay.visible {
-        opacity: 1;
-        pointer-events: auto;
+    .sidebar.mobileOpen {
+        transform: translateX(0);
     }
+
+    .header {
+        display: flex;
+        padding: var(--spacing-md);
+    }
+
+    .writeSection,
+    .footer {
+        display: flex;
+        /* Restore these */
+    }
+
+    .writeSection {
+        padding: var(--spacing-md);
+    }
+
+    .footer {
+        padding: var(--spacing-md);
+    }
+
+    .navList {
+        flex-direction: column;
+        padding: var(--spacing-md);
+        gap: var(--spacing-xs);
+    }
+
+    .navItem {
+        flex-direction: row;
+        gap: var(--spacing-md);
+        padding: 12px 16px;
+        justify-content: flex-start;
+        border-radius: var(--radius-md);
+        font-size: 0.95rem;
+    }
+
+    .navIcon {
+        font-size: 1.25rem;
+    }
+
+    .navText {
+        display: block !important;
+        font-size: 0.95rem;
+    }
+
+    /* Hide the desktop collapse button on mobile */
+    .collapseBtn {
+        display: none;
+    }
+}
+
+/* Overlay for Mobile */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
