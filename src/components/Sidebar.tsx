@@ -77,6 +77,21 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
         { id: 'settings', name: '설정', icon: '⚙️' },
     ];
 
+    // Mobile Resize Handler
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 900) {
+                if (isCollapsed) setIsCollapsed(false);
+            }
+        };
+
+        // Run on mount
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isCollapsed, setIsCollapsed]);
+
     return (
         <>
             {/* Mobile Overlay */}
@@ -163,10 +178,10 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
                                 title={item.name}
                             >
                                 <span className={styles.navIcon}>{item.icon}</span>
-                                {!isCollapsed && <span className={styles.navText}>{item.name}</span>}
+                                <span className={`${styles.navText} ${isCollapsed ? styles.hidden : ''}`}>{item.name}</span>
                             </button>
                             {/* Sub Menus (Tags) */}
-                            {!isCollapsed && subMenus[item.id] && subMenus[item.id].length > 0 && (
+                            {(!isCollapsed || window.innerWidth <= 900) && subMenus[item.id] && subMenus[item.id].length > 0 && (
                                 <div style={{ paddingLeft: '44px', display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '4px' }}>
                                     {subMenus[item.id].map(tag => (
                                         <button
@@ -235,4 +250,5 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
             </div>
         </>
     );
+
 }
