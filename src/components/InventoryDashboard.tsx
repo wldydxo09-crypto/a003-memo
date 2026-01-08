@@ -26,7 +26,14 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [formData, setFormData] = useState(INITIAL_FORM);
+    const [formData, setFormData] = useState<{
+        name: string;
+        description: string;
+        status: 'planned' | 'in-progress' | 'completed' | 'maintenance';
+        type: 'frontend' | 'backend' | 'database' | 'external' | 'other';
+        priority: 'low' | 'medium' | 'high';
+        techStack: string;
+    }>(INITIAL_FORM);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Architecture State
