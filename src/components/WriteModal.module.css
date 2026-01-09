@@ -15,22 +15,13 @@
 
 /* ... existing modal ... */
 
-/* Header Layout */
+/* Header */
 .header {
-    display: flex;
-    flex-direction: column;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
-    gap: 16px;
-    background: transparent;
-    /* Clean bg */
-}
-
-.headerTop {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .titleArea {
@@ -45,61 +36,6 @@
     color: var(--text-primary);
 }
 
-.headerControls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.urgentLabel {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.9rem;
-    color: #ff6b6b;
-    font-weight: 600;
-    cursor: pointer;
-    margin-right: 8px;
-}
-
-/* Header Buttons - Styled to match original footer design */
-.headerBtn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.saveBtn {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-    border: none;
-    color: white;
-    font-weight: 600;
-}
-
-.saveBtn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-.saveBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.cancelBtn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-}
-
-.cancelBtn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-}
-
 /* Selection Row (Categories + Labels) */
 .selectionRow {
     display: flex;
@@ -107,13 +43,11 @@
     gap: 12px;
 }
 
+/* Category Selector */
 .categorySelector {
     display: flex;
-    gap: var(--spacing-sm);
+    gap: 10px;
     flex-wrap: wrap;
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
-    /* Separator */
 }
 
 .labelSelector {
@@ -122,10 +56,6 @@
     color: var(--text-secondary);
     cursor: pointer;
     margin-right: 8px;
-}
-
-.urgentLabel input {
-    margin: 0;
 }
 
 
