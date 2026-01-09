@@ -37,6 +37,7 @@ export function getAuthUrl(oAuth2Client: any) {
     const scopes = [
         'https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/drive.file', // Added for image upload
     ];
 
     return oAuth2Client.generateAuthUrl({
@@ -45,3 +46,4 @@ export function getAuthUrl(oAuth2Client: any) {
         prompt: 'consent', // Force approval to ensure refresh token
     });
 }
+

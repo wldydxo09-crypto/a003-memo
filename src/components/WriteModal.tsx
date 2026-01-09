@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { HistoryItem, LabelType, addHistoryItem, uploadImages, checkDuplicateHistory } from '@/lib/firebaseService';
+import { HistoryItem, LabelType, addHistoryItem, checkDuplicateHistory } from '@/lib/firebaseService';
 import { MENUS } from '@/lib/menus';
 import styles from './WriteModal.module.css';
 
@@ -291,27 +291,55 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 }
             }
 
-            // Image Upload with Timeout & Catch
+            // Image Upload to Google Drive
             let imageUrls: string[] = [];
             if (images.length > 0) {
                 try {
-                    console.log('Starting image upload...', images.length);
-                    // Create a timeout promise
+                    console.log('Starting Google Drive upload...', images.length);
+
+                    const uploadPromises = images.map(async (file) => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const response = await fetch('/api/drive/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await response.json();
+
+                        if (!data.success) {
+                            if (data.needAuth) {
+                                throw new Error('NEED_AUTH');
+                            }
+                            throw new Error(data.error || '업로드 실패');
+                        }
+
+                        return data.url;
+                    });
+
+                    // Set timeout for entire batch
                     const timeout = new Promise<never>((_, reject) =>
-                        setTimeout(() => reject(new Error('Upload timed out (10s)')), 10000)
+                        setTimeout(() => reject(new Error('Upload timed out (30s)')), 30000)
                     );
 
-                    // Race upload against timeout
                     imageUrls = await Promise.race([
-                        uploadImages(userId, images),
+                        Promise.all(uploadPromises),
                         timeout
                     ]);
 
-                    console.log('Upload success:', imageUrls);
+                    console.log('Google Drive upload success:', imageUrls);
                 } catch (uploadError: any) {
                     console.error('Image upload failed:', uploadError);
-                    alert(`이미지 업로드 실패 (네트워크/CORS 문제): ${uploadError.message}\n\n텍스트만 저장됩니다.`);
-                    // We continue to save the text even if upload fails
+
+                    if (uploadError.message === 'NEED_AUTH') {
+                        if (confirm('Google Drive 연동이 필요합니다. 연동하시겠습니까?')) {
+                            window.open('/api/auth/google', '_blank');
+                        }
+                        // Still save text without images
+                    } else {
+                        alert(`이미지 업로드 실패: ${uploadError.message}\n\n텍스트만 저장됩니다.`);
+                    }
                 }
             }
 
