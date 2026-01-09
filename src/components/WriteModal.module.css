@@ -122,6 +122,148 @@
     flex: 1;
 }
 
+/* Control Bar (Top) */
+.controlBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.labelsGroup {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.labelBtn {
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: transparent;
+    color: #888;
+    border: 1px solid #444;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.labelBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.activeLabel {
+    background: var(--bg-glass-hover);
+    color: var(--primary);
+    border-color: var(--primary);
+    font-weight: 600;
+}
+
+.actionsGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    /* Push to right */
+}
+
+.urgentToggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #ff4444;
+    font-weight: 600;
+}
+
+.submitBtnSmall {
+    padding: 6px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.submitBtnSmall:hover {
+    background: var(--primary-dark);
+}
+
+.submitBtnSmall:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cancelBtnSmall {
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.cancelBtnSmall:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Calendar Section */
+.calendarSection {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.templateList {
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+    animation: fadeIn 0.2s;
+}
+
+.templateItem {
+    background: var(--bg-primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.templateItem:hover {
+    background: var(--bg-glass-hover);
+}
+
+.saveTemplateBtn {
+    width: 100%;
+    padding: 8px;
+    background: var(--primary);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
 /* Form Styles (Copied from TaskInput.module.css mostly) */
 .form {
     display: flex;
@@ -188,50 +330,10 @@
     cursor: wait;
 }
 
+/* Footer Removed (Moved to top) but keeping class for existing refs just in case, or remove */
 .footer {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-top: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.02);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-md);
-}
-
-.submitBtn {
-    padding: 10px 24px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.submitBtn:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.submitBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.cancelBtn {
-    padding: 10px 24px;
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.cancelBtn:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    display: none;
+    /* Hidden */
 }
 
 /* ... Other styles for labels, uploads etc ... */
