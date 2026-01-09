@@ -1,4 +1,5 @@
 'use client';
+// v2.0 - Simplified form for spreadsheet projects (2026-01-09)
 
 import { useState, useEffect } from 'react';
 import { subscribeToFeatures, addFeature, updateFeature, deleteFeature, FeatureItem } from '@/lib/firebaseService';
