@@ -22,6 +22,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
     // Calendar State
     const [saveToCalendar, setSaveToCalendar] = useState(false);
+    const [isAllDay, setIsAllDay] = useState(false);
     const [manualDate, setManualDate] = useState({
         startDate: '',
         startTime: '09:00',
@@ -411,8 +412,8 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 </div>
 
                 <div className={styles.content}>
-                    {/* Category Selector */}
-                    <div className={styles.categorySelector} style={{ marginBottom: '15px' }}>
+                    {/* 1. Category Selector - First Row */}
+                    <div className={styles.categorySelector}>
                         {MENUS.map(menu => (
                             <button
                                 key={menu.id}
@@ -424,22 +425,124 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         ))}
                     </div>
 
-                    {/* Template Controls */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
+                    {/* 2. Labels + Options Row - Second Row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
+                        {/* Labels */}
+                        {labels.map(label => (
+                            <button
+                                key={label.id}
+                                onClick={() => toggleLabel(label.id)}
+                                className={`${styles.categoryBtn} ${selectedLabels.includes(label.id) ? styles.active : ''}`}
+                                style={{
+                                    padding: '6px 12px',
+                                    fontSize: '0.8rem',
+                                    background: selectedLabels.includes(label.id)
+                                        ? (label.color === 'danger' ? '#ff4444' : label.color === 'success' ? '#00C851' : '#33b5e5')
+                                        : 'transparent',
+                                    borderColor: label.color === 'danger' ? '#ff4444' : label.color === 'success' ? '#00C851' : '#33b5e5',
+                                    color: selectedLabels.includes(label.id) ? 'white' : (label.color === 'danger' ? '#ff4444' : label.color === 'success' ? '#00C851' : '#33b5e5')
+                                }}
+                            >
+                                {label.name}
+                            </button>
+                        ))}
+
+                        {/* Divider */}
+                        <span style={{ color: '#444', margin: '0 4px' }}>|</span>
+
+                        {/* Urgency Checkbox */}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: isUrgent ? '#ff6b6b' : '#888', cursor: 'pointer', fontWeight: isUrgent ? 600 : 400 }}>
+                            <input
+                                type="checkbox"
+                                checked={isUrgent}
+                                onChange={(e) => setIsUrgent(e.target.checked)}
+                                style={{ accentColor: '#ff6b6b' }}
+                            />
+                            🔥 긴급
+                        </label>
+
+                        {/* Calendar Checkbox */}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: saveToCalendar ? 'var(--primary)' : '#888', cursor: 'pointer', fontWeight: saveToCalendar ? 600 : 400 }}>
+                            <input
+                                type="checkbox"
+                                checked={saveToCalendar}
+                                onChange={(e) => setSaveToCalendar(e.target.checked)}
+                                style={{ accentColor: 'var(--primary)' }}
+                            />
+                            📅 일정 추가
+                        </label>
+                    </div>
+
+                    {/* 3. Calendar Date Picker (Conditional) */}
+                    {saveToCalendar && (
+                        <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            {/* All Day Toggle */}
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#888', cursor: 'pointer', marginBottom: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={isAllDay}
+                                    onChange={(e) => setIsAllDay(e.target.checked)}
+                                />
+                                종일
+                            </label>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: isAllDay ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: '#666' }}>시작</label>
+                                    <input
+                                        type="date"
+                                        value={manualDate.startDate}
+                                        onChange={(e) => setManualDate({ ...manualDate, startDate: e.target.value })}
+                                        className={styles.summaryInput}
+                                        style={{ marginTop: '4px' }}
+                                    />
+                                    {!isAllDay && (
+                                        <input
+                                            type="time"
+                                            value={manualDate.startTime}
+                                            onChange={(e) => setManualDate({ ...manualDate, startTime: e.target.value })}
+                                            className={styles.summaryInput}
+                                            style={{ marginTop: '4px' }}
+                                        />
+                                    )}
+                                </div>
+                                {!isAllDay && (
+                                    <div>
+                                        <label style={{ fontSize: '0.75rem', color: '#666' }}>종료</label>
+                                        <input
+                                            type="date"
+                                            value={manualDate.endDate}
+                                            onChange={(e) => setManualDate({ ...manualDate, endDate: e.target.value })}
+                                            className={styles.summaryInput}
+                                            style={{ marginTop: '4px' }}
+                                        />
+                                        <input
+                                            type="time"
+                                            value={manualDate.endTime}
+                                            onChange={(e) => setManualDate({ ...manualDate, endTime: e.target.value })}
+                                            className={styles.summaryInput}
+                                            style={{ marginTop: '4px' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 4. Template Button (Small) */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
                         <button
                             onClick={() => setShowTemplates(!showTemplates)}
                             style={{
                                 background: 'transparent',
                                 border: 'none',
                                 color: 'var(--primary-light)',
-                                fontSize: '0.85rem',
+                                fontSize: '0.8rem',
                                 cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                opacity: 0.7
                             }}
                         >
-                            📋 자주 쓰는 양식 {showTemplates ? '닫기' : '불러오기'}
+                            📋 양식 {showTemplates ? '닫기' : ''}
                         </button>
                     </div>
 
@@ -449,7 +552,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             background: 'var(--bg-tertiary)',
                             borderRadius: '8px',
                             padding: '10px',
-                            marginBottom: '10px',
+                            marginTop: '8px',
                             border: '1px solid var(--border-color)'
                         }}>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
@@ -497,14 +600,15 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         </div>
                     )}
 
-                    <div className={styles.inputGroup}>
+                    {/* 5. Content Input */}
+                    <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
                         <textarea
                             className={styles.textarea}
                             placeholder="내용을 입력하세요..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             onPaste={handlePaste}
-                            style={{ minHeight: summary ? '100px' : '200px' }}
+                            style={{ minHeight: summary ? '100px' : '150px' }}
                         />
 
                         <button
@@ -517,28 +621,28 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         </button>
                     </div>
 
-                    {/* Summary Field (Conditional) */}
+                    {/* AI Summary (Conditional) */}
                     {summary && (
-                        <div style={{ marginTop: '10px' }}>
-                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '4px', display: 'block' }}>✨ AI 요약</label>
+                        <div style={{ marginTop: '8px' }}>
                             <input
                                 type="text"
                                 value={summary}
                                 onChange={(e) => setSummary(e.target.value)}
                                 className={styles.summaryInput}
+                                placeholder="AI 요약"
                             />
                         </div>
                     )}
 
-                    {/* Image Preview Grid */}
+                    {/* Image Preview */}
                     {previews.length > 0 && (
                         <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                             {previews.map((src, idx) => (
-                                <div key={idx} style={{ position: 'relative', width: '60px', height: '60px' }}>
+                                <div key={idx} style={{ position: 'relative', width: '50px', height: '50px' }}>
                                     <img src={src} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
                                     <button
                                         onClick={() => removeImage(idx)}
-                                        style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', border: 'none', width: '20px', height: '20px', cursor: 'pointer' }}
+                                        style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', border: 'none', width: '18px', height: '18px', cursor: 'pointer', fontSize: '12px' }}
                                     >
                                         ×
                                     </button>
@@ -547,98 +651,15 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         </div>
                     )}
 
-                    {/* Labels Row (Restored Position) */}
-                    <div className={styles.labelSelector} style={{ marginTop: '15px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {labels.map(label => (
-                            <button
-                                key={label.id}
-                                onClick={() => toggleLabel(label.id)}
-                                style={{
-                                    padding: '4px 12px',
-                                    borderRadius: '12px',
-                                    background: selectedLabels.includes(label.id) ? 'var(--bg-glass-hover)' : 'transparent',
-                                    color: selectedLabels.includes(label.id) ? 'var(--primary)' : '#888',
-                                    border: `1px solid ${selectedLabels.includes(label.id) ? 'var(--primary)' : '#444'}`,
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {label.name}
-                            </button>
-                        ))}
-                    </div>
-
+                    {/* 6. Image Upload Button */}
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        style={{ marginTop: '15px', background: 'transparent', border: '1px dashed #666', padding: '10px', width: '100%', borderRadius: '8px', color: '#888', cursor: 'pointer' }}
+                        style={{ marginTop: '10px', background: 'transparent', border: '1px dashed #555', padding: '8px', width: '100%', borderRadius: '6px', color: '#777', cursor: 'pointer', fontSize: '0.85rem' }}
                     >
                         📷 이미지 첨부
                     </button>
                     <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
-
-                    {/* Manual Calendar Toggle */}
-                    <div style={{ marginTop: '20px', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
-                        <label className={styles.priorityLabel} style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input
-                                type="checkbox"
-                                checked={saveToCalendar}
-                                onChange={(e) => setSaveToCalendar(e.target.checked)}
-                            />
-                            📅 캘린더에 일정 추가
-                        </label>
-
-                        {saveToCalendar && (
-                            <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>시작</label>
-                                    <input
-                                        type="date"
-                                        value={manualDate.startDate}
-                                        onChange={(e) => setManualDate({ ...manualDate, startDate: e.target.value })}
-                                        className={styles.summaryInput}
-                                        style={{ marginTop: '4px' }}
-                                    />
-                                    <input
-                                        type="time"
-                                        value={manualDate.startTime}
-                                        onChange={(e) => setManualDate({ ...manualDate, startTime: e.target.value })}
-                                        className={styles.summaryInput}
-                                        style={{ marginTop: '4px' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>종료</label>
-                                    <input
-                                        type="date"
-                                        value={manualDate.endDate}
-                                        onChange={(e) => setManualDate({ ...manualDate, endDate: e.target.value })}
-                                        className={styles.summaryInput}
-                                        style={{ marginTop: '4px' }}
-                                    />
-                                    <input
-                                        type="time"
-                                        value={manualDate.endTime}
-                                        onChange={(e) => setManualDate({ ...manualDate, endTime: e.target.value })}
-                                        className={styles.summaryInput}
-                                        style={{ marginTop: '4px' }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Urgency Toggle (Restored Position) */}
-                    <div style={{ marginTop: '15px' }}>
-                        <label className={styles.priorityLabel}>
-                            <input
-                                type="checkbox"
-                                checked={isUrgent}
-                                onChange={(e) => setIsUrgent(e.target.checked)}
-                            />
-                            🔥 긴급 / 중요 (Priority)
-                        </label>
-                    </div>
                 </div>
 
                 {/* Footer (Restored) */}
