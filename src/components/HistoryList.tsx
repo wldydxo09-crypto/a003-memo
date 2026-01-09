@@ -50,7 +50,7 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                 status: filter === 'all' ? undefined : filter,
                 menuId: menuId,
                 label: labelFilter || undefined,
-                subMenuId: subMenuId, // Add subMenuId filter
+                // subMenuId filtering is done client-side
             },
             (fetchedItems) => {
                 // If subMenuId is specified but not in query, filter client-side
