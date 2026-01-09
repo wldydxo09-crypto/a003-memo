@@ -7,6 +7,7 @@ import styles from './HistoryList.module.css';
 interface HistoryListProps {
     userId: string;
     menuId?: string;
+    subMenuId?: string; // For filtering by submenu keyword
     initialFilter?: FilterType;
     initialSearchQuery?: string;
     initialLabel?: string | null;
@@ -15,7 +16,7 @@ interface HistoryListProps {
 type FilterType = 'all' | 'pending' | 'in-progress' | 'completed';
 type LabelFilter = string | null;
 
-export default function HistoryList({ userId, menuId, initialFilter = 'all', initialSearchQuery = '', initialLabel = null }: HistoryListProps) {
+export default function HistoryList({ userId, menuId, subMenuId, initialFilter = 'all', initialSearchQuery = '', initialLabel = null }: HistoryListProps) {
     const [items, setItems] = useState<HistoryItem[]>([]);
     const [filter, setFilter] = useState<FilterType>(initialFilter);
     const [labelFilter, setLabelFilter] = useState<LabelFilter>(initialLabel);
@@ -49,15 +50,22 @@ export default function HistoryList({ userId, menuId, initialFilter = 'all', ini
                 status: filter === 'all' ? undefined : filter,
                 menuId: menuId,
                 label: labelFilter || undefined,
+                subMenuId: subMenuId, // Add subMenuId filter
             },
             (fetchedItems) => {
-                setItems(fetchedItems);
+                // If subMenuId is specified but not in query, filter client-side
+                if (subMenuId) {
+                    const filtered = fetchedItems.filter(item => item.subMenuId === subMenuId);
+                    setItems(filtered);
+                } else {
+                    setItems(fetchedItems);
+                }
                 setLoading(false);
             }
         );
 
         return () => unsubscribe();
-    }, [userId, menuId, filter, labelFilter]);
+    }, [userId, menuId, subMenuId, filter, labelFilter]);
 
     const handleStatusChange = async (item: HistoryItem, newStatus: 'pending' | 'in-progress' | 'completed') => {
         if (!item.id || item.status === newStatus) return;
@@ -373,6 +381,11 @@ export default function HistoryList({ userId, menuId, initialFilter = 'all', ini
                                     <span className={styles.menuBadge}>
                                         {item.menuName}
                                     </span>
+                                    {item.subMenuId && (
+                                        <span style={{ fontSize: '0.75rem', background: '#6366f1', color: 'white', padding: '2px 8px', borderRadius: '10px' }}>
+                                            ➜ {item.subMenuId}
+                                        </span>
+                                    )}
                                     {item.priority === 'high' && (
                                         <span style={{ fontSize: '0.8rem', color: '#ff4444', fontWeight: 'bold' }}>🔥 긴급</span>
                                     )}

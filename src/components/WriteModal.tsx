@@ -163,6 +163,22 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         return detected;
     };
 
+    // Auto-detect submenu based on keyword match
+    const detectSubMenu = (text: string): string | null => {
+        const lowerText = text.toLowerCase();
+        const savedSettings = localStorage.getItem('smartWork_subMenus');
+        const subMenus = savedSettings ? JSON.parse(savedSettings) : {};
+        const menuTags = subMenus[menuId] || [];
+
+        // Find the first matching keyword and use it as the submenu ID
+        for (const tag of menuTags) {
+            if (lowerText.includes(tag.toLowerCase())) {
+                return tag; // Return the matching keyword as subMenuId
+            }
+        }
+        return null;
+    };
+
     const handleAiSummary = async () => {
         if (!content.trim()) return;
         setIsAiLoading(true);
@@ -348,6 +364,9 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             const detectedTags = detectTags(content + ' ' + (summary || ''), selectedLabels);
             const finalLabels = [...new Set([...selectedLabels, ...detectedTags])] as any[];
 
+            // Detect submenu based on content keywords
+            const detectedSubMenu = detectSubMenu(content);
+
             await addHistoryItem({
                 userId,
                 menuId,
@@ -358,7 +377,8 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 status: 'pending',
                 labels: finalLabels,
                 priority: isUrgent ? 'high' : 'normal',
-                calendarEventId
+                calendarEventId,
+                subMenuId: detectedSubMenu,
             });
 
             onClose();

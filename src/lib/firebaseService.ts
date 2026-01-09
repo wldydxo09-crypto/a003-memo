@@ -31,6 +31,7 @@ export interface HistoryItem {
     status: 'pending' | 'in-progress' | 'completed';
     labels: string[];
     sheetName?: string | null;
+    subMenuId?: string | null; // Auto-classified submenu based on keywords
     emailSent?: boolean;
     triggerInfo?: string | null;
     calendarEventId?: string;
