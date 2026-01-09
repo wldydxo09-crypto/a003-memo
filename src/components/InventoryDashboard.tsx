@@ -137,8 +137,8 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
         } catch (error: any) {
             console.error('Submit error:', error);
             console.error('Error details:', error.message, error.code);
-            console.error('Data being saved:', JSON.stringify(data, null, 2));
             alert(`저장 실패: ${error.message || '알 수 없는 오류'}`);
+        } finally {
         } finally {
             setIsSubmitting(false);
         }
