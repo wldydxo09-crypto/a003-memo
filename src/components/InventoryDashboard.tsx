@@ -13,9 +13,13 @@ const INITIAL_FORM = {
     name: '',
     description: '',
     status: 'planned' as const,
-    type: 'frontend' as const,
+    type: 'spreadsheet' as const, // Default to spreadsheet for user's use case
     priority: 'medium' as const,
     techStack: '', // Comma separated string for input
+    spreadsheetId: '',
+    sheetNames: '', // Comma separated
+    keyFunctions: '', // Format: "functionName: description" per line
+    triggerInfo: '',
 };
 
 export default function InventoryDashboard({ userId }: InventoryDashboardProps) {
@@ -30,9 +34,13 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
         name: string;
         description: string;
         status: 'planned' | 'in-progress' | 'completed' | 'maintenance';
-        type: 'frontend' | 'backend' | 'database' | 'external' | 'other';
+        type: 'frontend' | 'backend' | 'database' | 'external' | 'spreadsheet' | 'other';
         priority: 'low' | 'medium' | 'high';
         techStack: string;
+        spreadsheetId: string;
+        sheetNames: string;
+        keyFunctions: string;
+        triggerInfo: string;
     }>(INITIAL_FORM);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +67,10 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                 type: feature.type as any,
                 priority: feature.priority as any,
                 techStack: feature.techStack.join(', '),
+                spreadsheetId: feature.spreadsheetId || '',
+                sheetNames: feature.sheetNames?.join(', ') || '',
+                keyFunctions: feature.keyFunctions?.map(f => `${f.name}: ${f.description}`).join('\n') || '',
+                triggerInfo: feature.triggerInfo || '',
             });
         } else {
             setEditingId(null);
@@ -94,6 +106,21 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                 .map(s => s.trim())
                 .filter(s => s);
 
+            // Parse sheetNames (comma separated)
+            const sheetNamesArray = formData.sheetNames
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s);
+
+            // Parse keyFunctions (newline separated, format: "name: description")
+            const keyFunctionsArray = formData.keyFunctions
+                .split('\n')
+                .map(line => {
+                    const [name, ...descParts] = line.split(':');
+                    return { name: name?.trim() || '', description: descParts.join(':').trim() };
+                })
+                .filter(f => f.name);
+
             const data = {
                 userId,
                 name: formData.name,
@@ -103,6 +130,10 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                 priority: formData.priority,
                 techStack: techStackArray,
                 progress: formData.status === 'completed' ? 100 : 0,
+                spreadsheetId: formData.spreadsheetId || undefined,
+                sheetNames: sheetNamesArray.length > 0 ? sheetNamesArray : undefined,
+                keyFunctions: keyFunctionsArray.length > 0 ? keyFunctionsArray : undefined,
+                triggerInfo: formData.triggerInfo || undefined,
             };
 
             if (editingId) {
@@ -311,6 +342,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                     value={formData.type}
                                     onChange={e => setFormData({ ...formData, type: e.target.value as any })}
                                 >
+                                    <option value="spreadsheet">📊 Google Spreadsheet</option>
                                     <option value="frontend">Frontend (UI)</option>
                                     <option value="backend">Backend (API)</option>
                                     <option value="database">Database</option>
@@ -327,13 +359,54 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                     placeholder="기능에 대한 설명..."
                                 />
                             </div>
+
+                            {/* Spreadsheet-specific fields */}
+                            {formData.type === 'spreadsheet' && (
+                                <>
+                                    <div className={styles.formGroup} style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                        <label className={styles.label} style={{ color: '#4CAF50' }}>📊 스프레드시트 정보</label>
+
+                                        <div style={{ marginTop: '8px' }}>
+                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>시트 이름 (콤마 구분)</label>
+                                            <input
+                                                className={styles.input}
+                                                value={formData.sheetNames}
+                                                onChange={e => setFormData({ ...formData, sheetNames: e.target.value })}
+                                                placeholder="예: 매입현황, 재고, 이력"
+                                            />
+                                        </div>
+
+                                        <div style={{ marginTop: '10px' }}>
+                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>주요 함수 (한 줄에 하나씩 - 함수명: 설명)</label>
+                                            <textarea
+                                                className={styles.textarea}
+                                                value={formData.keyFunctions}
+                                                onChange={e => setFormData({ ...formData, keyFunctions: e.target.value })}
+                                                placeholder="onEdit: 셀 수정 시 자동 업데이트\nsendEmail: 매일 리포트 발송\ngetData: 데이터 조회"
+                                                rows={4}
+                                            />
+                                        </div>
+
+                                        <div style={{ marginTop: '10px' }}>
+                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>트리거 정보</label>
+                                            <input
+                                                className={styles.input}
+                                                value={formData.triggerInfo}
+                                                onChange={e => setFormData({ ...formData, triggerInfo: e.target.value })}
+                                                placeholder="예: 매일 오전 9시 sendEmail 실행"
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>사용 기술 (콤마 구분)</label>
                                 <input
                                     className={styles.input}
                                     value={formData.techStack}
                                     onChange={e => setFormData({ ...formData, techStack: e.target.value })}
-                                    placeholder="예: React, Firebase"
+                                    placeholder="예: Google Apps Script, JavaScript"
                                 />
                             </div>
                             <div className={styles.modalActions}>

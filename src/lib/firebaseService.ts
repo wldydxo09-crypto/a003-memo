@@ -216,9 +216,14 @@ export interface FeatureItem {
     description: string;
     status: 'planned' | 'in-progress' | 'completed' | 'maintenance' | 'deprecated';
     progress: number;
-    type: 'frontend' | 'backend' | 'database' | 'external' | 'other';
+    type: 'frontend' | 'backend' | 'database' | 'external' | 'spreadsheet' | 'other';
     priority: 'low' | 'medium' | 'high' | 'critical';
     techStack: string[];
+    // Google Spreadsheet specific fields
+    spreadsheetId?: string;
+    sheetNames?: string[];
+    keyFunctions?: { name: string; description: string }[];
+    triggerInfo?: string;
     relatedDocumentIds?: string[];
     createdAt: Timestamp;
     updatedAt: Timestamp;
