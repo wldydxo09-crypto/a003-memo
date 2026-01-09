@@ -12,14 +12,11 @@ interface InventoryDashboardProps {
 const INITIAL_FORM = {
     name: '',
     description: '',
-    status: 'planned' as const,
-    type: 'spreadsheet' as const, // Default to spreadsheet for user's use case
-    priority: 'medium' as const,
-    techStack: '', // Comma separated string for input
-    spreadsheetId: '',
     sheetNames: '', // Comma separated
     keyFunctions: '', // Format: "functionName: description" per line
     triggerInfo: '',
+    emailNotification: false,
+    status: 'in-progress' as const,
 };
 
 export default function InventoryDashboard({ userId }: InventoryDashboardProps) {
@@ -33,14 +30,11 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
     const [formData, setFormData] = useState<{
         name: string;
         description: string;
-        status: 'planned' | 'in-progress' | 'completed' | 'maintenance';
-        type: 'frontend' | 'backend' | 'database' | 'external' | 'spreadsheet' | 'other';
-        priority: 'low' | 'medium' | 'high';
-        techStack: string;
-        spreadsheetId: string;
         sheetNames: string;
         keyFunctions: string;
         triggerInfo: string;
+        emailNotification: boolean;
+        status: 'planned' | 'in-progress' | 'completed' | 'maintenance';
     }>(INITIAL_FORM);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,14 +57,11 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
             setFormData({
                 name: feature.name,
                 description: feature.description,
-                status: feature.status as any,
-                type: feature.type as any,
-                priority: feature.priority as any,
-                techStack: feature.techStack.join(', '),
-                spreadsheetId: feature.spreadsheetId || '',
                 sheetNames: feature.sheetNames?.join(', ') || '',
                 keyFunctions: feature.keyFunctions?.map(f => `${f.name}: ${f.description}`).join('\n') || '',
                 triggerInfo: feature.triggerInfo || '',
+                emailNotification: !!feature.triggerInfo?.includes('메일') || !!feature.triggerInfo?.includes('mail'),
+                status: feature.status as any,
             });
         } else {
             setEditingId(null);
@@ -101,39 +92,39 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
 
         setIsSubmitting(true);
         try {
-            const techStackArray = formData.techStack
-                .split(',')
-                .map(s => s.trim())
-                .filter(s => s);
-
             // Parse sheetNames (comma separated)
             const sheetNamesArray = formData.sheetNames
                 .split(',')
-                .map(s => s.trim())
-                .filter(s => s);
+                .map((s: string) => s.trim())
+                .filter((s: string) => s);
 
             // Parse keyFunctions (newline separated, format: "name: description")
             const keyFunctionsArray = formData.keyFunctions
                 .split('\n')
-                .map(line => {
+                .map((line: string) => {
                     const [name, ...descParts] = line.split(':');
                     return { name: name?.trim() || '', description: descParts.join(':').trim() };
                 })
-                .filter(f => f.name);
+                .filter((f: { name: string }) => f.name);
+
+            // Append email info to triggerInfo if emailNotification is checked
+            let triggerInfoText = formData.triggerInfo;
+            if (formData.emailNotification && !triggerInfoText.includes('메일')) {
+                triggerInfoText = triggerInfoText ? `${triggerInfoText}, 메일 발송` : '메일 발송';
+            }
 
             const data = {
                 userId,
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
-                type: formData.type,
-                priority: formData.priority,
-                techStack: techStackArray,
+                type: 'spreadsheet' as const,
+                priority: 'medium' as const,
+                techStack: ['Google Apps Script'],
                 progress: formData.status === 'completed' ? 100 : 0,
-                spreadsheetId: formData.spreadsheetId || undefined,
                 sheetNames: sheetNamesArray.length > 0 ? sheetNamesArray : undefined,
                 keyFunctions: keyFunctionsArray.length > 0 ? keyFunctionsArray : undefined,
-                triggerInfo: formData.triggerInfo || undefined,
+                triggerInfo: triggerInfoText || undefined,
             };
 
             if (editingId) {
@@ -336,79 +327,63 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                 </select>
                             </div>
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>유형</label>
-                                <select
-                                    className={styles.select}
-                                    value={formData.type}
-                                    onChange={e => setFormData({ ...formData, type: e.target.value as any })}
-                                >
-                                    <option value="spreadsheet">📊 Google Spreadsheet</option>
-                                    <option value="frontend">Frontend (UI)</option>
-                                    <option value="backend">Backend (API)</option>
-                                    <option value="database">Database</option>
-                                    <option value="external">External Service</option>
-                                    <option value="other">기타</option>
-                                </select>
-                            </div>
-                            <div className={styles.formGroup}>
                                 <label className={styles.label}>설명</label>
                                 <textarea
                                     className={styles.textarea}
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder="기능에 대한 설명..."
+                                    placeholder="이 프로젝트에 대한 설명..."
                                 />
                             </div>
 
-                            {/* Spreadsheet-specific fields */}
-                            {formData.type === 'spreadsheet' && (
-                                <>
-                                    <div className={styles.formGroup} style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                        <label className={styles.label} style={{ color: '#4CAF50' }}>📊 스프레드시트 정보</label>
+                            {/* Spreadsheet Info */}
+                            <div className={styles.formGroup} style={{ marginTop: '10px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <label className={styles.label} style={{ color: '#4CAF50', marginBottom: '12px', display: 'block' }}>📊 스프레드시트 정보</label>
 
-                                        <div style={{ marginTop: '8px' }}>
-                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>시트 이름 (콤마 구분)</label>
-                                            <input
-                                                className={styles.input}
-                                                value={formData.sheetNames}
-                                                onChange={e => setFormData({ ...formData, sheetNames: e.target.value })}
-                                                placeholder="예: 매입현황, 재고, 이력"
-                                            />
-                                        </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label className={styles.label} style={{ fontSize: '0.8rem' }}>시트 이름 (콤마 구분)</label>
+                                    <input
+                                        className={styles.input}
+                                        value={formData.sheetNames}
+                                        onChange={e => setFormData({ ...formData, sheetNames: e.target.value })}
+                                        placeholder="예: 매입현황, 재고, 이력"
+                                    />
+                                </div>
 
-                                        <div style={{ marginTop: '10px' }}>
-                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>주요 함수 (한 줄에 하나씩 - 함수명: 설명)</label>
-                                            <textarea
-                                                className={styles.textarea}
-                                                value={formData.keyFunctions}
-                                                onChange={e => setFormData({ ...formData, keyFunctions: e.target.value })}
-                                                placeholder="onEdit: 셀 수정 시 자동 업데이트\nsendEmail: 매일 리포트 발송\ngetData: 데이터 조회"
-                                                rows={4}
-                                            />
-                                        </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label className={styles.label} style={{ fontSize: '0.8rem' }}>주요 함수 (한 줄에 하나씩 - 함수명: 설명)</label>
+                                    <textarea
+                                        className={styles.textarea}
+                                        value={formData.keyFunctions}
+                                        onChange={e => setFormData({ ...formData, keyFunctions: e.target.value })}
+                                        placeholder="onEdit: 셀 수정 시 자동 업데이트&#10;sendEmail: 매일 리포트 발송&#10;getData: 데이터 조회"
+                                        rows={4}
+                                    />
+                                </div>
 
-                                        <div style={{ marginTop: '10px' }}>
-                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>트리거 정보</label>
-                                            <input
-                                                className={styles.input}
-                                                value={formData.triggerInfo}
-                                                onChange={e => setFormData({ ...formData, triggerInfo: e.target.value })}
-                                                placeholder="예: 매일 오전 9시 sendEmail 실행"
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label className={styles.label} style={{ fontSize: '0.8rem' }}>트리거 정보</label>
+                                    <input
+                                        className={styles.input}
+                                        value={formData.triggerInfo}
+                                        onChange={e => setFormData({ ...formData, triggerInfo: e.target.value })}
+                                        placeholder="예: 매일 오전 9시 sendEmail 실행"
+                                    />
+                                </div>
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>사용 기술 (콤마 구분)</label>
-                                <input
-                                    className={styles.input}
-                                    value={formData.techStack}
-                                    onChange={e => setFormData({ ...formData, techStack: e.target.value })}
-                                    placeholder="예: Google Apps Script, JavaScript"
-                                />
+                                <div style={{ marginTop: '8px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer', color: formData.emailNotification ? '#4CAF50' : '#888' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.emailNotification}
+                                            onChange={e => setFormData({ ...formData, emailNotification: e.target.checked })}
+                                            style={{ accentColor: '#4CAF50' }}
+                                        />
+                                        📧 메일 발송 여부
+                                    </label>
+                                </div>
                             </div>
+
                             <div className={styles.modalActions}>
                                 <button type="button" className={styles.cancelBtn} onClick={handleCloseModal}>취소</button>
                                 <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
