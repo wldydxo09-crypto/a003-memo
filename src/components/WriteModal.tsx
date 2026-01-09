@@ -275,34 +275,43 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                     const calData = await calRes.json();
                     if (calData.success) {
                         calendarEventId = calData.id;
-                        alert('📅 캘린더에 일정이 추가되었습니다.');
+                        // alert('📅 캘린더에 일정이 추가되었습니다.'); // Reduced alert noise
                     } else {
                         if (calData.needAuth) {
                             if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
                                 window.open('/api/auth/google', '_blank');
                             }
                         } else {
-                            alert(`캘린더 저장 실패: ${calData.error}`);
+                            console.error(`Calendar save failed: ${calData.error}`);
                         }
                     }
                 } catch (calError: any) {
                     console.error("Calendar Sync Error", calError);
-                    alert(`캘린더 오류: ${calError.message}`);
+                    // alert(`캘린더 오류: ${calError.message}`); // Reduced alert noise
                 }
             }
 
-            // Image Upload with Debug
+            // Image Upload with Timeout & Catch
             let imageUrls: string[] = [];
             if (images.length > 0) {
                 try {
                     console.log('Starting image upload...', images.length);
-                    imageUrls = await uploadImages(userId, images);
+                    // Create a timeout promise
+                    const timeout = new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error('Upload timed out (10s)')), 10000)
+                    );
+
+                    // Race upload against timeout
+                    imageUrls = await Promise.race([
+                        uploadImages(userId, images),
+                        timeout
+                    ]);
+
                     console.log('Upload success:', imageUrls);
                 } catch (uploadError: any) {
                     console.error('Image upload failed:', uploadError);
-                    alert(`이미지 업로드 실패: ${uploadError.message || '알 수 없는 오류'}\n(텍스트만 저장됩니다)`);
-                    // Optional: return; if you want to stop saving on upload fail.
-                    // But usually better to allow text save.
+                    alert(`이미지 업로드 실패 (네트워크/CORS 문제): ${uploadError.message}\n\n텍스트만 저장됩니다.`);
+                    // We continue to save the text even if upload fails
                 }
             }
 
@@ -366,70 +375,49 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className={styles.modal}>
+                {/* Reverted Header */}
                 <div className={styles.header}>
-                    <div className={styles.headerTop}>
-                        <div className={styles.titleArea}>
-                            <div className={styles.title}>새 기록 작성</div>
-                        </div>
-                        <div className={styles.headerControls}>
-                            <label className={styles.urgentLabel}>
-                                <input
-                                    type="checkbox"
-                                    checked={isUrgent}
-                                    onChange={(e) => setIsUrgent(e.target.checked)}
-                                />
-                                🔥 긴급
-                            </label>
-                            <button className={`${styles.headerBtn} ${styles.cancelBtnHeader}`} onClick={onClose}>취소</button>
-                            <button
-                                className={`${styles.headerBtn} ${styles.saveBtn}`}
-                                onClick={handleSubmit}
-                                disabled={!content.trim() || isSubmitting}
-                            >
-                                {isSubmitting ? '저장...' : '저장'}
-                            </button>
-                            {/* Original Close X is redundant but allowed if user wants icon. I'll hide it to be clean */}
-                            {/* <button className={styles.closeBtn} onClick={onClose}>×</button> */}
-                        </div>
+                    <div className={styles.titleArea}>
+                        <div className={styles.title}>새 기록 작성</div>
                     </div>
-
-                    {/* Category & Labels Row */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div className={styles.categorySelector}>
-                            {MENUS.map(menu => (
-                                <button
-                                    key={menu.id}
-                                    className={`${styles.categoryBtn} ${menuId === menu.id ? styles.active : ''}`}
-                                    onClick={() => setMenuId(menu.id)}
-                                >
-                                    {menu.name}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Moved Labels Here (Red Box Area) */}
-                        <div className={styles.labelSelector}>
-                            {labels.map(label => (
-                                <button
-                                    key={label.id}
-                                    onClick={() => toggleLabel(label.id)}
-                                    style={{
-                                        padding: '4px 12px',
-                                        borderRadius: '12px',
-                                        background: selectedLabels.includes(label.id) ? 'var(--bg-glass-hover)' : 'transparent',
-                                        color: selectedLabels.includes(label.id) ? 'var(--primary)' : '#888',
-                                        border: `1px solid ${selectedLabels.includes(label.id) ? 'var(--primary)' : '#444'}`,
-                                        fontSize: '0.8rem'
-                                    }}
-                                >
-                                    {label.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <button className={styles.closeBtn} onClick={onClose}>×</button>
                 </div>
 
                 <div className={styles.content}>
+                    {/* Category Selector */}
+                    <div className={styles.categorySelector} style={{ marginBottom: '10px' }}>
+                        {MENUS.map(menu => (
+                            <button
+                                key={menu.id}
+                                className={`${styles.categoryBtn} ${menuId === menu.id ? styles.active : ''}`}
+                                onClick={() => setMenuId(menu.id)}
+                            >
+                                {menu.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Labels Row */}
+                    <div className={styles.labelSelector} style={{ marginBottom: '15px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {labels.map(label => (
+                            <button
+                                key={label.id}
+                                onClick={() => toggleLabel(label.id)}
+                                style={{
+                                    padding: '4px 12px',
+                                    borderRadius: '12px',
+                                    background: selectedLabels.includes(label.id) ? 'var(--bg-glass-hover)' : 'transparent',
+                                    color: selectedLabels.includes(label.id) ? 'var(--primary)' : '#888',
+                                    border: `1px solid ${selectedLabels.includes(label.id) ? 'var(--primary)' : '#444'}`,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {label.name}
+                            </button>
+                        ))}
+                    </div>
+
                     {/* Template Controls */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
                         <button
@@ -614,10 +602,31 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             </div>
                         )}
                     </div>
-                    {/* Removed Urgency Toggle from bottom */}
+
+                    {/* Urgency Toggle at Bottom */}
+                    <div style={{ marginTop: '15px' }}>
+                        <label className={styles.priorityLabel}>
+                            <input
+                                type="checkbox"
+                                checked={isUrgent}
+                                onChange={(e) => setIsUrgent(e.target.checked)}
+                            />
+                            🔥 긴급 / 중요 (Priority)
+                        </label>
+                    </div>
                 </div>
 
-                {/* Removed Footer */}
+                {/* Resurrected Footer */}
+                <div className={styles.footer}>
+                    <button className={styles.cancelBtn} onClick={onClose}>취소</button>
+                    <button
+                        className={styles.submitBtn}
+                        onClick={handleSubmit}
+                        disabled={!content.trim() || isSubmitting}
+                    >
+                        {isSubmitting ? '저장 중...' : '저장하기'}
+                    </button>
+                </div>
             </div>
         </div >
     );

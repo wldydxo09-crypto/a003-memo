@@ -16,31 +16,41 @@
 /* ... existing modal ... */
 
 .header {
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.headerTop {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.headerControls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .titleArea {
-    /* No longer flex-1 needed if row is split */
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* ... existing title ... */
+.title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+/* Reverted Header Styles end here */
 
 .categorySelector {
     display: flex;
