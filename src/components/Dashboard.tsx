@@ -43,6 +43,65 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [hidePastEvents, setHidePastEvents] = useState(true); // Default to true (Hide by default)
 
+    // Event Creation Modal
+    const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+    const [eventModalDate, setEventModalDate] = useState<Date | null>(null);
+    const [newEventTitle, setNewEventTitle] = useState('');
+    const [newEventTime, setNewEventTime] = useState({ start: '09:00', end: '10:00' });
+    const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+    const handleDateClick = (date: Date) => {
+        setSelectedDate(date);
+        setEventModalDate(date);
+        setIsEventModalOpen(true);
+        setNewEventTitle('');
+        setNewEventTime({ start: '09:00', end: '10:00' });
+    };
+
+    const handleCreateEvent = async () => {
+        if (!newEventTitle.trim() || !eventModalDate) return;
+        setIsCreatingEvent(true);
+        try {
+            const startDateTime = new Date(eventModalDate);
+            const [startH, startM] = newEventTime.start.split(':').map(Number);
+            startDateTime.setHours(startH, startM, 0);
+
+            const endDateTime = new Date(eventModalDate);
+            const [endH, endM] = newEventTime.end.split(':').map(Number);
+            endDateTime.setHours(endH, endM, 0);
+
+            const res = await fetch('/api/calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    summary: newEventTitle,
+                    startDateTime: startDateTime.toISOString(),
+                    endDateTime: endDateTime.toISOString(),
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ 일정이 추가되었습니다!');
+                setIsEventModalOpen(false);
+                fetchEvents(); // Refetch events
+            } else {
+                if (data.needAuth) {
+                    if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
+                        window.open('/api/auth/google', '_blank');
+                    }
+                } else {
+                    alert(`일정 추가 실패: ${data.error}`);
+                }
+            }
+        } catch (error: any) {
+            console.error('Event creation error:', error);
+            alert(`일정 추가 오류: ${error.message}`);
+        } finally {
+            setIsCreatingEvent(false);
+        }
+    };
+
     // Filtered History
     useEffect(() => {
         // Subscribe to ALL history
@@ -235,7 +294,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                         <section className={styles.calendarSection}>
                             <CalendarWidget
                                 events={events}
-                                onDateSelect={setSelectedDate}
+                                onDateSelect={handleDateClick}
                                 selectedDate={selectedDate}
                             />
                         </section>
@@ -348,6 +407,90 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                     <NewsWidget />
                 </div>
             </div>
+
+            {/* Event Creation Modal */}
+            {isEventModalOpen && eventModalDate && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    backdropFilter: 'blur(5px)'
+                }}>
+                    <div style={{
+                        background: '#1e1e1e', padding: '30px', borderRadius: '16px', width: '400px', maxWidth: '90%',
+                        border: '1px solid #333', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                    }}>
+                        <h2 style={{ margin: '0 0 20px 0', color: 'white' }}>
+                            📅 {eventModalDate.getMonth() + 1}월 {eventModalDate.getDate()}일 일정 추가
+                        </h2>
+
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>일정 제목</label>
+                            <input
+                                type="text"
+                                value={newEventTitle}
+                                onChange={(e) => setNewEventTitle(e.target.value)}
+                                placeholder="예: 미팅, 회의, 마감일..."
+                                autoFocus
+                                style={{
+                                    width: '100%', padding: '12px', borderRadius: '8px',
+                                    background: '#252525', border: '1px solid #444', color: 'white',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>시작 시간</label>
+                                <input
+                                    type="time"
+                                    value={newEventTime.start}
+                                    onChange={(e) => setNewEventTime({ ...newEventTime, start: e.target.value })}
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: '8px',
+                                        background: '#252525', border: '1px solid #444', color: 'white'
+                                    }}
+                                />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>종료 시간</label>
+                                <input
+                                    type="time"
+                                    value={newEventTime.end}
+                                    onChange={(e) => setNewEventTime({ ...newEventTime, end: e.target.value })}
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: '8px',
+                                        background: '#252525', border: '1px solid #444', color: 'white'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                onClick={() => setIsEventModalOpen(false)}
+                                style={{
+                                    padding: '10px 20px', borderRadius: '8px', border: 'none',
+                                    background: '#444', color: 'white', cursor: 'pointer'
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={handleCreateEvent}
+                                disabled={isCreatingEvent || !newEventTitle.trim()}
+                                style={{
+                                    padding: '10px 20px', borderRadius: '8px', border: 'none',
+                                    background: isCreatingEvent ? '#555' : '#6366f1', color: 'white', cursor: 'pointer',
+                                    opacity: (!newEventTitle.trim() || isCreatingEvent) ? 0.5 : 1
+                                }}
+                            >
+                                {isCreatingEvent ? '추가 중...' : '일정 추가'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
