@@ -471,6 +471,21 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             />
                             📅 일정 추가
                         </label>
+
+                        {/* Template Toggle - Moved Here */}
+                        <button
+                            onClick={() => setShowTemplates(!showTemplates)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: showTemplates ? 'var(--primary)' : '#888',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                fontWeight: showTemplates ? 600 : 400
+                            }}
+                        >
+                            📋 양식
+                        </button>
                     </div>
 
                     {/* 3. Calendar Date Picker (Conditional) */}
@@ -528,23 +543,6 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             </div>
                         </div>
                     )}
-
-                    {/* 4. Template Button (Small) */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                        <button
-                            onClick={() => setShowTemplates(!showTemplates)}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--primary-light)',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                opacity: 0.7
-                            }}
-                        >
-                            📋 양식 {showTemplates ? '닫기' : ''}
-                        </button>
-                    </div>
 
                     {/* Template List (Collapsible) */}
                     {showTemplates && (
