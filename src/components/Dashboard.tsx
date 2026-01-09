@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { subscribeToHistory, HistoryItem } from '@/lib/firebaseService';
+import { subscribeToHistory, subscribeToUserSettings, HistoryItem } from '@/lib/firebaseService';
 import { useRouter } from 'next/navigation';
 import styles from './Dashboard.module.css';
 
@@ -54,6 +54,15 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                 completed: items.filter(i => i.status === 'completed').length
             };
             setStats(counts);
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    // Sync subMenus to localStorage for WriteModal auto-classification
+    useEffect(() => {
+        const unsubscribe = subscribeToUserSettings(userId, (settings) => {
+            localStorage.setItem('smartWork_subMenus', JSON.stringify(settings));
+            console.log('SubMenus synced to localStorage:', Object.keys(settings));
         });
         return () => unsubscribe();
     }, [userId]);
