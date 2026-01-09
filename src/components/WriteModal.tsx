@@ -10,8 +10,6 @@ interface WriteModalProps {
     initialMenuId?: string;
 }
 
-
-
 export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'work' }: WriteModalProps) {
     const [menuId, setMenuId] = useState(initialMenuId);
     const [content, setContent] = useState('');
@@ -20,8 +18,17 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
     const [previews, setPreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
-    const [isUrgent, setIsUrgent] = useState(false); // New state
+    const [isUrgent, setIsUrgent] = useState(false);
+
+    // Calendar State
     const [saveToCalendar, setSaveToCalendar] = useState(false);
+    const [manualDate, setManualDate] = useState({
+        startDate: '',
+        startTime: '09:00',
+        endDate: '',
+        endTime: '10:00'
+    });
+    const [aiSchedule, setAiSchedule] = useState<{ title: string, start: string, end: string, location: string } | null>(null);
 
     // Templates
     const [showTemplates, setShowTemplates] = useState(false);
@@ -68,10 +75,6 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
     // Labels logic
     const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
-    // ... (rest of code) ...
-
-    // (Inside return JSX, above textarea)
-    // We need to inject the template button row.
 
     const labels = [
         { id: 'issue', name: '문제', color: 'danger' },
@@ -91,7 +94,15 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             setImages([]);
             setPreviews([]);
             setSelectedLabels([]);
-            setIsUrgent(false); // Reset
+            setIsUrgent(false);
+            setSaveToCalendar(false);
+            setManualDate({
+                startDate: new Date().toISOString().split('T')[0],
+                startTime: '09:00',
+                endDate: new Date().toISOString().split('T')[0],
+                endTime: '10:00'
+            });
+            setAiSchedule(null);
         }
     }, [isOpen, initialMenuId]);
 
@@ -128,8 +139,6 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         );
     };
 
-
-
     const detectTags = (text: string, currentTags: string[]) => {
         const lowerText = text.toLowerCase();
         const savedSettings = localStorage.getItem('smartWork_subMenus');
@@ -157,7 +166,6 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         if (!content.trim()) return;
         setIsAiLoading(true);
         try {
-            // Updated to use Server API with 'schedule' type to detect dates
             const savedKey = localStorage.getItem('smartWork_geminiKey');
             const res = await fetch('/api/ai/summary', {
                 method: 'POST',
@@ -170,36 +178,30 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
             setSummary(data.summary);
 
-            // 1. Auto Schedule Creation Logic
+            // Auto Schedule Detection (Store it, don't create yet)
             if (data.schedule) {
                 console.log('Detected Schedule:', data.schedule);
-                const calRes = await fetch('/api/calendar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        summary: data.schedule.title,
-                        description: `[AI 생성] 원본 메모: ${content}`,
-                        startDateTime: data.schedule.start,
-                        endDateTime: data.schedule.end,
-                        location: data.schedule.location
-                    })
-                });
+                setAiSchedule(data.schedule);
+                setSaveToCalendar(true); // Auto-enable checkbox if AI detects schedule
 
-                if (calRes.ok) {
-                    alert(`📅 캘린더에 일정이 추가되었습니다!\n\n[${data.schedule.title}]\n${new Date(data.schedule.start).toLocaleString()}`);
-                } else {
-                    const calData = await calRes.json();
-                    if (calRes.status === 401 || calData.needAuth) {
-                        if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
-                            window.open('/api/auth/google', '_blank');
-                        }
-                    } else {
-                        console.error('Calendar Create Error:', calData);
-                    }
+                // Pre-fill manual inputs with AI detected time
+                const aiStart = new Date(data.schedule.start);
+                const aiEnd = new Date(data.schedule.end);
+
+                // Check if date is valid
+                if (!isNaN(aiStart.getTime())) {
+                    setManualDate({
+                        startDate: aiStart.toISOString().split('T')[0],
+                        startTime: aiStart.toTimeString().slice(0, 5),
+                        endDate: aiEnd.toISOString().split('T')[0],
+                        endTime: aiEnd.toTimeString().slice(0, 5)
+                    });
                 }
+
+                alert(`🤖 AI가 일정을 감지했습니다!\n[${data.schedule.title}]\n\n'캘린더에 추가' 항목을 확인해주세요.`);
             }
 
-            // 2. Auto Label Logic
+            // Auto Label Logic
             const newTags = detectTags(content + ' ' + data.summary, selectedLabels);
             if (newTags.length > 0) {
                 setSelectedLabels(prev => [...prev, ...newTags] as any[]);
@@ -214,9 +216,9 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             }
             const errorMsg = error.message || String(error);
             if (errorMsg.includes('429') || errorMsg.includes('Quota') || errorMsg.includes('Too Many Requests')) {
-                alert('⚠️ AI 사용량이 일시적으로 초과되었습니다.\n\nAI 요약은 건너뛰지만, 내용은 정상적으로 저장할 수 있습니다.\n(태그 자동 분류는 자체 분석으로 시도했습니다)');
+                alert('⚠️ AI 사용량이 초과되었습니다. (요약 건너뜀)');
             } else {
-                alert(`AI 분석 실패: ${errorMsg} (태그 자동 분류는 시도했습니다)`);
+                alert(`AI 분석 실패: ${errorMsg}`);
             }
         } finally {
             setIsAiLoading(false);
@@ -238,10 +240,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 const dupDate = firstDup.createdAt?.toDate ? firstDup.createdAt.toDate().toLocaleDateString() : '최근';
                 const snippet = firstDup.content.length > 50 ? firstDup.content.substring(0, 50) + '...' : firstDup.content;
 
-                const confirmSave = confirm(
-                    `⚠️ 유사한 기록이 ${dupDate}에 있습니다.\n\n[기존 내용]: "${snippet}"\n\n그래도 저장하시겠습니까?`
-                );
-                if (!confirmSave) {
+                if (!confirm(`⚠️ 유사한 기록이 ${dupDate}에 있습니다.\n\n"${snippet}"\n\n저장하시겠습니까?`)) {
                     setIsSubmitting(false);
                     return;
                 }
@@ -249,56 +248,46 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
             let calendarEventId = undefined;
 
-            // Calendar Sync Logic
+            // Calendar Logic
             if (saveToCalendar) {
                 try {
-                    // 1. Extract Schedule Info using AI
-                    const aiRes = await fetch('/api/ai/summary', {
+                    // Use Manual Data or Fallback
+                    const startDateTime = `${manualDate.startDate}T${manualDate.startTime}:00`;
+                    const endDateTime = `${manualDate.endDate}T${manualDate.endTime}:00`;
+
+                    // Simple Validation
+                    if (!manualDate.startDate || !manualDate.endDate) {
+                        throw new Error('날짜를 선택해주세요.');
+                    }
+
+                    const calRes = await fetch('/api/calendar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: content, type: 'schedule' })
+                        body: JSON.stringify({
+                            summary: aiSchedule?.title || summary || '새로운 일정',
+                            description: `[메모] ${content}`,
+                            startDateTime: startDateTime,
+                            endDateTime: endDateTime,
+                            location: aiSchedule?.location || null
+                        })
                     });
-                    const aiData = await aiRes.json();
 
-                    if (aiData.schedule) {
-                        // 2. Create Event
-                        const calRes = await fetch('/api/calendar', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                summary: aiData.schedule.title || summary || '새로운 일정',
-                                description: content,
-                                startDateTime: aiData.schedule.start,
-                                endDateTime: aiData.schedule.end,
-                                location: aiData.schedule.location
-                            })
-                        });
-                        const calData = await calRes.json();
-                        if (calData.success) {
-                            calendarEventId = calData.id;
-                        } else {
-                            if (calData.needAuth) {
-                                alert('구글 캘린더 연동이 필요합니다. 로그인 상태를 확인해주세요.');
-                            } else {
-                                alert(`캘린더 저장 실패: ${calData.error}`);
-                            }
-                        }
+                    const calData = await calRes.json();
+                    if (calData.success) {
+                        calendarEventId = calData.id;
+                        alert('📅 캘린더에 일정이 추가되었습니다.');
                     } else {
-                        // Check for specific API error
-                        if (aiData.error) {
-                            console.warn("AI API Error:", aiData.error);
-                            if (String(aiData.error).includes('429') || String(aiData.error).includes('Quota')) {
-                                alert('AI 사용량이 초과되어 캘린더 자동 추출이 불가능합니다. (기록만 저장됩니다)');
-                            } else {
-                                alert(`AI 오류로 캘린더에 저장하지 못했습니다: ${aiData.error} (기록만 저장됩니다)`);
+                        if (calData.needAuth) {
+                            if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
+                                window.open('/api/auth/google', '_blank');
                             }
                         } else {
-                            alert('내용에서 날짜/시간 정보를 찾을 수 없어 캘린더에 저장하지 못했습니다. (기록만 저장됩니다)');
+                            alert(`캘린더 저장 실패: ${calData.error}`);
                         }
                     }
                 } catch (calError: any) {
                     console.error("Calendar Sync Error", calError);
-                    alert(`캘린더 연동 중 오류가 발생했습니다: ${calError.message}`);
+                    alert(`캘린더 오류: ${calError.message}`);
                 }
             }
 
@@ -329,7 +318,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             setSelectedLabels([]);
         } catch (error: any) {
             console.error('Registration failed:', error);
-            alert(`등록에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+            alert(`등록 실패: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -533,10 +522,60 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                     </button>
                     <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
 
+                    {/* Manual Calendar Toggle */}
+                    <div style={{ marginTop: '20px', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
+                        <label className={styles.priorityLabel} style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input
+                                type="checkbox"
+                                checked={saveToCalendar}
+                                onChange={(e) => setSaveToCalendar(e.target.checked)}
+                            />
+                            📅 캘린더에 일정 추가
+                        </label>
+
+                        {saveToCalendar && (
+                            <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>시작</label>
+                                    <input
+                                        type="date"
+                                        value={manualDate.startDate}
+                                        onChange={(e) => setManualDate({ ...manualDate, startDate: e.target.value })}
+                                        className={styles.summaryInput}
+                                        style={{ marginTop: '4px' }}
+                                    />
+                                    <input
+                                        type="time"
+                                        value={manualDate.startTime}
+                                        onChange={(e) => setManualDate({ ...manualDate, startTime: e.target.value })}
+                                        className={styles.summaryInput}
+                                        style={{ marginTop: '4px' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>종료</label>
+                                    <input
+                                        type="date"
+                                        value={manualDate.endDate}
+                                        onChange={(e) => setManualDate({ ...manualDate, endDate: e.target.value })}
+                                        className={styles.summaryInput}
+                                        style={{ marginTop: '4px' }}
+                                    />
+                                    <input
+                                        type="time"
+                                        value={manualDate.endTime}
+                                        onChange={(e) => setManualDate({ ...manualDate, endTime: e.target.value })}
+                                        className={styles.summaryInput}
+                                        style={{ marginTop: '4px' }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Urgency Toggle */}
                     <div style={{ marginTop: '15px' }}>
-
-                        <label className={styles.priorityLabel} style={{ marginTop: '5px' }}>
+                        <label className={styles.priorityLabel}>
                             <input
                                 type="checkbox"
                                 checked={isUrgent}
