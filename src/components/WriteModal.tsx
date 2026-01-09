@@ -157,12 +157,12 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         if (!content.trim()) return;
         setIsAiLoading(true);
         try {
-            // Updated to use Server API
+            // Updated to use Server API with 'schedule' type to detect dates
             const savedKey = localStorage.getItem('smartWork_geminiKey');
             const res = await fetch('/api/ai/summary', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: content, type: 'general', apiKey: savedKey })
+                body: JSON.stringify({ text: content, type: 'schedule', apiKey: savedKey })
             });
             const data = await res.json();
 
@@ -170,7 +170,36 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
             setSummary(data.summary);
 
-            // Auto Label Logic
+            // 1. Auto Schedule Creation Logic
+            if (data.schedule) {
+                console.log('Detected Schedule:', data.schedule);
+                const calRes = await fetch('/api/calendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        summary: data.schedule.title,
+                        description: `[AI 생성] 원본 메모: ${content}`,
+                        startDateTime: data.schedule.start,
+                        endDateTime: data.schedule.end,
+                        location: data.schedule.location
+                    })
+                });
+
+                if (calRes.ok) {
+                    alert(`📅 캘린더에 일정이 추가되었습니다!\n\n[${data.schedule.title}]\n${new Date(data.schedule.start).toLocaleString()}`);
+                } else {
+                    const calData = await calRes.json();
+                    if (calRes.status === 401 || calData.needAuth) {
+                        if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
+                            window.open('/api/auth/google', '_blank');
+                        }
+                    } else {
+                        console.error('Calendar Create Error:', calData);
+                    }
+                }
+            }
+
+            // 2. Auto Label Logic
             const newTags = detectTags(content + ' ' + data.summary, selectedLabels);
             if (newTags.length > 0) {
                 setSelectedLabels(prev => [...prev, ...newTags] as any[]);
