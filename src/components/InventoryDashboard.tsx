@@ -114,19 +114,21 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                 triggerInfoText = triggerInfoText ? `${triggerInfoText}, 메일 발송` : '메일 발송';
             }
 
-            const data = {
+            const data: any = {
                 userId,
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
-                type: 'spreadsheet' as const,
-                priority: 'medium' as const,
+                type: 'spreadsheet',
+                priority: 'medium',
                 techStack: ['Google Apps Script'],
                 progress: formData.status === 'completed' ? 100 : 0,
-                sheetNames: sheetNamesArray.length > 0 ? sheetNamesArray : undefined,
-                keyFunctions: keyFunctionsArray.length > 0 ? keyFunctionsArray : undefined,
-                triggerInfo: triggerInfoText || undefined,
             };
+
+            // Only add optional fields if they have values (Firestore rejects undefined)
+            if (sheetNamesArray.length > 0) data.sheetNames = sheetNamesArray;
+            if (keyFunctionsArray.length > 0) data.keyFunctions = keyFunctionsArray;
+            if (triggerInfoText) data.triggerInfo = triggerInfoText;
 
             if (editingId) {
                 await updateFeature(editingId, data);
