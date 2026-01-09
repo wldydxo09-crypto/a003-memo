@@ -20,6 +20,8 @@ export default function SettingsModal({ isOpen, onClose, userId }: SettingsModal
         if (isOpen && userId) {
             const unsubscribe = subscribeToUserSettings(userId, (settings) => {
                 setSubMenus(settings);
+                // Sync to localStorage for WriteModal to use
+                localStorage.setItem('smartWork_subMenus', JSON.stringify(settings));
             });
             return () => unsubscribe();
         }
@@ -28,6 +30,8 @@ export default function SettingsModal({ isOpen, onClose, userId }: SettingsModal
     const saveSettings = async (newSettings: { [key: string]: string[] }) => {
         // Optimistic update
         setSubMenus(newSettings);
+        // Sync to localStorage for WriteModal to use
+        localStorage.setItem('smartWork_subMenus', JSON.stringify(newSettings));
         // Save to Firestore
         try {
             await saveUserSettings(userId, newSettings);

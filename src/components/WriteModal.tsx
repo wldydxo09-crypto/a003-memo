@@ -163,17 +163,19 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         return detected;
     };
 
-    // Auto-detect submenu based on keyword match
+    // Auto-detect submenu based on submenu name OR keyword match
     const detectSubMenu = (text: string): string | null => {
         const lowerText = text.toLowerCase();
         const savedSettings = localStorage.getItem('smartWork_subMenus');
         const subMenus = savedSettings ? JSON.parse(savedSettings) : {};
+
+        // Get all submenu names (tags) for the current menu
         const menuTags = subMenus[menuId] || [];
 
-        // Find the first matching keyword and use it as the submenu ID
+        // Check if content contains any submenu name directly
         for (const tag of menuTags) {
             if (lowerText.includes(tag.toLowerCase())) {
-                return tag; // Return the matching keyword as subMenuId
+                return tag; // Return the matching submenu name
             }
         }
         return null;
