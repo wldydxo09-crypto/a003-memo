@@ -51,11 +51,13 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
     const handleDateClick = (date: Date) => {
+        console.log('📅 Date clicked:', date.toISOString(), 'Opening modal...');
         setSelectedDate(date);
         setEventModalDate(date);
         setIsEventModalOpen(true);
         setNewEventTitle('');
         setNewEventTime({ start: '09:00', end: '10:00' });
+        console.log('📅 Modal should be open now, isEventModalOpen: true');
     };
 
     const handleCreateEvent = async () => {
