@@ -5,8 +5,16 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 // This must match the authorized redirect URI in Google Console
 // Robust Base URL detection
 const getBaseUrl = () => {
+    // 1. If explicit env var is set (Best practice)
     if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
-    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+    // 2. In Production (Vercel), default to the main domain if env var is missing
+    // This prevents "preview URLs" from breaking Google Auth
+    if (process.env.NODE_ENV === 'production') {
+        return 'https://a003-memo.vercel.app';
+    }
+
+    // 3. Fallback for Local Development
     return 'http://localhost:3000';
 };
 
