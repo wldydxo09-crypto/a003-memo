@@ -139,7 +139,6 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
             console.error('Error details:', error.message, error.code);
             alert(`저장 실패: ${error.message || '알 수 없는 오류'}`);
         } finally {
-        } finally {
             setIsSubmitting(false);
         }
     };
