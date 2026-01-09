@@ -55,7 +55,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         const newTemplate = { id: Date.now().toString(), name, content };
         const updated = [...templates, newTemplate];
         setTemplates(updated);
-        localStorage.setItem('my_templates', JSON.parse(JSON.stringify(updated)));
+        localStorage.setItem('my_templates', JSON.stringify(updated));
         alert('양식이 저장되었습니다.');
     };
 
@@ -80,7 +80,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
         { id: 'issue', name: '문제', color: 'danger' },
         { id: 'idea', name: '아이디어', color: 'primary' },
         { id: 'update', name: '업데이트', color: 'success' },
-        // 'general' removed as requested
+        // { id: 'general', name: '일반', color: 'warning' }, // Deleted as requested
     ];
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -291,7 +291,20 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 }
             }
 
-            const imageUrls = await uploadImages(userId, images);
+            // Image Upload with Debug
+            let imageUrls: string[] = [];
+            if (images.length > 0) {
+                try {
+                    console.log('Starting image upload...', images.length);
+                    imageUrls = await uploadImages(userId, images);
+                    console.log('Upload success:', imageUrls);
+                } catch (uploadError: any) {
+                    console.error('Image upload failed:', uploadError);
+                    alert(`이미지 업로드 실패: ${uploadError.message || '알 수 없는 오류'}\n(텍스트만 저장됩니다)`);
+                    // Optional: return; if you want to stop saving on upload fail.
+                    // But usually better to allow text save.
+                }
+            }
 
             // Auto-detect tags one last time before saving (in case AI was skipped)
             const detectedTags = detectTags(content + ' ' + (summary || ''), selectedLabels);
@@ -353,17 +366,36 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className={styles.modal}>
-                {/* 1. Header & Controls */}
                 <div className={styles.header}>
-                    <div className={styles.titleArea}>
-                        {/* Top Row: Title + Close */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div className={styles.headerTop}>
+                        <div className={styles.titleArea}>
                             <div className={styles.title}>새 기록 작성</div>
-                            <button className={styles.closeBtn} onClick={onClose}>×</button>
                         </div>
+                        <div className={styles.headerControls}>
+                            <label className={styles.urgentLabel}>
+                                <input
+                                    type="checkbox"
+                                    checked={isUrgent}
+                                    onChange={(e) => setIsUrgent(e.target.checked)}
+                                />
+                                🔥 긴급
+                            </label>
+                            <button className={`${styles.headerBtn} ${styles.cancelBtnHeader}`} onClick={onClose}>취소</button>
+                            <button
+                                className={`${styles.headerBtn} ${styles.saveBtn}`}
+                                onClick={handleSubmit}
+                                disabled={!content.trim() || isSubmitting}
+                            >
+                                {isSubmitting ? '저장...' : '저장'}
+                            </button>
+                            {/* Original Close X is redundant but allowed if user wants icon. I'll hide it to be clean */}
+                            {/* <button className={styles.closeBtn} onClick={onClose}>×</button> */}
+                        </div>
+                    </div>
 
-                        {/* 2. Menu Tabs */}
-                        <div className={styles.categorySelector} style={{ marginBottom: '16px' }}>
+                    {/* Category & Labels Row */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className={styles.categorySelector}>
                             {MENUS.map(menu => (
                                 <button
                                     key={menu.id}
@@ -375,49 +407,28 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             ))}
                         </div>
 
-                        {/* 3. Control Bar (Red Box Area) */}
-                        <div className={styles.controlBar}>
-                            {/* Left: Labels */}
-                            <div className={styles.labelsGroup}>
-                                {labels.map(label => (
-                                    <button
-                                        key={label.id}
-                                        onClick={() => toggleLabel(label.id)}
-                                        className={`${styles.labelBtn} ${selectedLabels.includes(label.id) ? styles.activeLabel : ''}`}
-                                        data-color={label.color}
-                                    >
-                                        {label.name}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Right: Actions */}
-                            <div className={styles.actionsGroup}>
-                                <label className={styles.urgentToggle}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isUrgent}
-                                        onChange={(e) => setIsUrgent(e.target.checked)}
-                                    />
-                                    🔥 긴급
-                                </label>
-
-                                <div style={{ width: '1px', height: '20px', background: 'var(--border-color)', margin: '0 8px' }}></div>
-
-                                <button className={styles.cancelBtnSmall} onClick={onClose}>취소</button>
+                        {/* Moved Labels Here (Red Box Area) */}
+                        <div className={styles.labelSelector}>
+                            {labels.map(label => (
                                 <button
-                                    className={styles.submitBtnSmall}
-                                    onClick={handleSubmit}
-                                    disabled={!content.trim() || isSubmitting}
+                                    key={label.id}
+                                    onClick={() => toggleLabel(label.id)}
+                                    style={{
+                                        padding: '4px 12px',
+                                        borderRadius: '12px',
+                                        background: selectedLabels.includes(label.id) ? 'var(--bg-glass-hover)' : 'transparent',
+                                        color: selectedLabels.includes(label.id) ? 'var(--primary)' : '#888',
+                                        border: `1px solid ${selectedLabels.includes(label.id) ? 'var(--primary)' : '#444'}`,
+                                        fontSize: '0.8rem'
+                                    }}
                                 >
-                                    {isSubmitting ? '...' : '저장'}
+                                    {label.name}
                                 </button>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* 4. Content Area */}
                 <div className={styles.content}>
                     {/* Template Controls */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
@@ -440,12 +451,28 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
                     {/* Template List (Collapsible) */}
                     {showTemplates && (
-                        <div className={styles.templateList}>
+                        <div style={{
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '8px',
+                            padding: '10px',
+                            marginBottom: '10px',
+                            border: '1px solid var(--border-color)'
+                        }}>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
                                 {templates.map(t => (
                                     <div
                                         key={t.id}
-                                        className={styles.templateItem}
+                                        style={{
+                                            background: 'var(--bg-primary)',
+                                            padding: '6px 12px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.85rem',
+                                            border: '1px solid var(--border-color)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            cursor: 'pointer'
+                                        }}
                                         onClick={() => loadTemplate(t.content)}
                                     >
                                         <span>{t.name}</span>
@@ -460,7 +487,16 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             </div>
                             <button
                                 onClick={saveTemplate}
-                                className={styles.saveTemplateBtn}
+                                style={{
+                                    width: '100%',
+                                    padding: '8px',
+                                    background: 'var(--primary)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
                             >
                                 + 현재 입력 내용 양식으로 저장
                             </button>
@@ -517,6 +553,8 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         </div>
                     )}
 
+                    {/* Removed Labels from here */}
+
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -527,7 +565,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                     <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
 
                     {/* Manual Calendar Toggle */}
-                    <div className={styles.calendarSection}>
+                    <div style={{ marginTop: '20px', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
                         <label className={styles.priorityLabel} style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input
                                 type="checkbox"
@@ -576,7 +614,10 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             </div>
                         )}
                     </div>
+                    {/* Removed Urgency Toggle from bottom */}
                 </div>
+
+                {/* Removed Footer */}
             </div>
         </div >
     );
