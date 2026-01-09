@@ -375,49 +375,72 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className={styles.modal}>
-                {/* Reverted Header */}
+                {/* Header with Controls */}
                 <div className={styles.header}>
-                    <div className={styles.titleArea}>
-                        <div className={styles.title}>새 기록 작성</div>
+                    <div className={styles.headerTop}>
+                        <div className={styles.titleArea}>
+                            <div className={styles.title}>새 기록 작성</div>
+                        </div>
+                        <div className={styles.headerControls}>
+                            <label className={styles.urgentLabel}>
+                                <input
+                                    type="checkbox"
+                                    checked={isUrgent}
+                                    onChange={(e) => setIsUrgent(e.target.checked)}
+                                />
+                                🔥 긴급
+                            </label>
+                            <button className={`${styles.headerBtn} ${styles.cancelBtn}`} onClick={onClose}>취소</button>
+                            <button
+                                className={`${styles.headerBtn} ${styles.saveBtn}`}
+                                onClick={handleSubmit}
+                                disabled={!content.trim() || isSubmitting}
+                            >
+                                {isSubmitting ? '저장...' : '저장'}
+                            </button>
+                        </div>
                     </div>
-                    <button className={styles.closeBtn} onClick={onClose}>×</button>
+
+                    {/* Category & Labels Row */}
+                    <div className={styles.selectionRow}>
+                        <div className={styles.categorySelector}>
+                            {MENUS.map(menu => (
+                                <button
+                                    key={menu.id}
+                                    className={`${styles.categoryBtn} ${menuId === menu.id ? styles.active : ''}`}
+                                    onClick={() => setMenuId(menu.id)}
+                                >
+                                    {menu.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Labels in Header */}
+                        <div className={styles.labelSelector}>
+                            {labels.map(label => (
+                                <button
+                                    key={label.id}
+                                    onClick={() => toggleLabel(label.id)}
+                                    className={`${styles.labelBtn} ${selectedLabels.includes(label.id) ? styles.labelActive : ''}`}
+                                    style={{
+                                        borderColor: label.color === 'danger' ? '#ff4444' :
+                                            label.color === 'success' ? '#00C851' :
+                                                label.color === 'primary' ? '#33b5e5' : '#888',
+                                        color: selectedLabels.includes(label.id) ? 'white' : '#888',
+                                        backgroundColor: selectedLabels.includes(label.id) ?
+                                            (label.color === 'danger' ? '#ff4444' :
+                                                label.color === 'success' ? '#00C851' :
+                                                    label.color === 'primary' ? '#33b5e5' : '#888') : 'transparent'
+                                    }}
+                                >
+                                    {label.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 <div className={styles.content}>
-                    {/* Category Selector */}
-                    <div className={styles.categorySelector} style={{ marginBottom: '10px' }}>
-                        {MENUS.map(menu => (
-                            <button
-                                key={menu.id}
-                                className={`${styles.categoryBtn} ${menuId === menu.id ? styles.active : ''}`}
-                                onClick={() => setMenuId(menu.id)}
-                            >
-                                {menu.name}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Labels Row */}
-                    <div className={styles.labelSelector} style={{ marginBottom: '15px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {labels.map(label => (
-                            <button
-                                key={label.id}
-                                onClick={() => toggleLabel(label.id)}
-                                style={{
-                                    padding: '4px 12px',
-                                    borderRadius: '12px',
-                                    background: selectedLabels.includes(label.id) ? 'var(--bg-glass-hover)' : 'transparent',
-                                    color: selectedLabels.includes(label.id) ? 'var(--primary)' : '#888',
-                                    border: `1px solid ${selectedLabels.includes(label.id) ? 'var(--primary)' : '#444'}`,
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {label.name}
-                            </button>
-                        ))}
-                    </div>
-
                     {/* Template Controls */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
                         <button
@@ -494,7 +517,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                     <div className={styles.inputGroup}>
                         <textarea
                             className={styles.textarea}
-                            placeholder="내용을 입력하세요... (이미지를 붙여넣으면 자동 첨부됩니다)"
+                            placeholder="내용을 입력하세요..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             onPaste={handlePaste}
@@ -602,30 +625,6 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                             </div>
                         )}
                     </div>
-
-                    {/* Urgency Toggle at Bottom */}
-                    <div style={{ marginTop: '15px' }}>
-                        <label className={styles.priorityLabel}>
-                            <input
-                                type="checkbox"
-                                checked={isUrgent}
-                                onChange={(e) => setIsUrgent(e.target.checked)}
-                            />
-                            🔥 긴급 / 중요 (Priority)
-                        </label>
-                    </div>
-                </div>
-
-                {/* Resurrected Footer */}
-                <div className={styles.footer}>
-                    <button className={styles.cancelBtn} onClick={onClose}>취소</button>
-                    <button
-                        className={styles.submitBtn}
-                        onClick={handleSubmit}
-                        disabled={!content.trim() || isSubmitting}
-                    >
-                        {isSubmitting ? '저장 중...' : '저장하기'}
-                    </button>
                 </div>
             </div>
         </div >
