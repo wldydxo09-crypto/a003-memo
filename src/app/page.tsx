@@ -64,6 +64,52 @@ export default function Home() {
   // Handle Back Button for Mobile Sidebar
   useModalBack(isMobileOpen, () => setIsMobileOpen(false));
 
+  // --- Advanced Back Button & History Management ---
+  useEffect(() => {
+    // 1. Initialize History State on Load
+    // We replace the current state to ensure it has our shape
+    window.history.replaceState({ menu: 'dashboard', place: 'home' }, '', window.location.pathname);
+
+    // 2. Handle Popstate (Back Button)
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      console.log('PopState:', state);
+
+      // logic: If we have a menu in state, restore it.
+      if (state && state.menu) {
+        // Just update state, don't push
+        setCurrentMenu(state.menu);
+      } else {
+        // Fallback to dashboard if state is null (e.g. external link back)
+        if (currentMenu !== 'dashboard') {
+          setCurrentMenu('dashboard');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Wrapper for Menu Change to support History
+  // We will pass this to Sidebar instead of setCurrentMenu directly
+  const handleMenuChangeWithHistory = (menuId: string) => {
+    if (menuId === currentMenu) return;
+
+    // Push new state
+    window.history.pushState({ menu: menuId }, '', `?menu=${menuId}`);
+    setCurrentMenu(menuId);
+  };
+
+  // Double Back to Exit Logic
+  // In a browser, we can't easily capture "Exit" attempts. 
+  // However, we can ensure the User is deeper in the stack.
+  // We can't implement "Double Tap to Exit" perfectly in a standard web page 
+  // without trapping the user, which is bad practice/hard. 
+  // But we can ensure "Back -> Dashboard".
+
+  // We need to update Sidebar's onMenuChange prop
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -89,11 +135,19 @@ export default function Home() {
     } else {
       setHistorySearchQuery('');
     }
-    setCurrentMenu('history');
+
+    // Use History Push
+    handleMenuChangeWithHistory('history');
   };
 
   if (loading) return <div className={styles.loading}>Loading...</div>;
   if (!user) return <Login user={user} loading={loading} />;
+
+  // ... (getMenuTitle remains same) ...
+
+  // Helper to replace direct setCurrentMenu calls with history friendly one
+  // Check Sidebar props: onMenuChange={setCurrentMenu} -> {handleMenuChangeWithHistory}
+
 
   const getMenuTitle = (id: string) => {
     const titles: Record<string, string> = {
@@ -133,7 +187,7 @@ export default function Home() {
     <div className={styles.layout}>
       <Sidebar
         currentMenu={currentMenu}
-        onMenuChange={setCurrentMenu}
+        onMenuChange={handleMenuChangeWithHistory}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         onOpenWrite={() => handleOpenWrite('work')}
