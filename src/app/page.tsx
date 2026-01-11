@@ -333,6 +333,30 @@ export default function Home() {
                   </div>
                 </section>
 
+                {/* App Update / Cache Clear */}
+                <section style={{ background: 'var(--bg-secondary)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>🔄 앱 업데이트 / 캐시</h3>
+                  <div style={{ background: 'var(--bg-primary)', padding: '15px', borderRadius: '10px' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#ccc', marginBottom: '15px', lineHeight: '1.5' }}>
+                      모바일에서 최신 기능이 보이지 않거나 오류가 발생할 때 사용하세요.
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (confirm('페이지를 새로고침 하시겠습니까?')) {
+                          // Cache busting reload
+                          window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+                        }
+                      }}
+                      style={{ width: '100%', padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      ⚡ 최신 버전으로 새로고침
+                    </button>
+                    <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '10px', textAlign: 'center' }}>
+                      Build: {new Date().toLocaleDateString()}
+                    </p>
+                  </div>
+                </section>
+
                 {/* Account */}
                 <section style={{ background: 'var(--bg-secondary)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
                   <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>👤 계정 정보</h3>
