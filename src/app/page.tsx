@@ -11,6 +11,7 @@ import HistoryList from '@/components/HistoryList';
 import WriteModal from '@/components/WriteModal';
 import SubMenuSettingsManager from '@/components/SubMenuSettingsManager';
 import styles from './page.module.css';
+import { useModalBack } from '@/hooks/useModalBack';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,7 +23,9 @@ export default function Home() {
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [writeInitialMenu, setWriteInitialMenu] = useState('work');
 
-  // History Filter State (from Dashboard stats click)
+  // Handle Back Button for Write Modal
+  useModalBack(isWriteModalOpen, () => setIsWriteModalOpen(false));
+
   // History Filter State
   const [historyFilter, setHistoryFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
   const [historySearchQuery, setHistorySearchQuery] = useState('');
@@ -56,9 +59,10 @@ export default function Home() {
   };
 
   // Mobile Sidebar State
-
-  // Mobile Sidebar State
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Handle Back Button for Mobile Sidebar
+  useModalBack(isMobileOpen, () => setIsMobileOpen(false));
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

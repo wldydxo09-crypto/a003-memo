@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useModalBack } from '@/hooks/useModalBack';
 import { subscribeToUserSettings } from '@/lib/firebaseService';
 import { fetchHistory } from '@/lib/dataService';
 import { useRouter } from 'next/navigation';
@@ -20,6 +21,9 @@ import SettingsModal from './SettingsModal';
 export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: DashboardProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Handle Back Button
+    useModalBack(isSettingsOpen, () => setIsSettingsOpen(false));
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,6 +49,9 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
 
     // Event Creation Modal
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+    // Handle Back Button for Event Modal
+    useModalBack(isEventModalOpen, () => setIsEventModalOpen(false));
+
     const [eventModalDate, setEventModalDate] = useState<Date | null>(null);
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventTime, setNewEventTime] = useState({ start: '09:00', end: '10:00' });

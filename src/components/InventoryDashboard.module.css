@@ -239,6 +239,25 @@
     cursor: pointer;
 }
 
+/* Search Bar */
+.searchContainer {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.searchInput {
+    flex: 1;
+    height: 48px;
+    padding: 0 15px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
 .submitBtn {
     padding: 8px 16px;
     border-radius: var(--radius-sm);
@@ -246,4 +265,48 @@
     color: white;
     border: none;
     cursor: pointer;
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+    .searchContainer {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .searchInput {
+        width: 100%;
+    }
+
+    .addBtn {
+        width: 100%;
+        min-width: auto !important;
+    }
+
+    .list .card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--spacing-md);
+    }
+
+    .list .cardHeader {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .list .cardTitle {
+        margin-bottom: 5px;
+    }
+
+    .list .cardDesc {
+        margin-bottom: var(--spacing-sm);
+        -webkit-line-clamp: 3;
+    }
+
+    .list .cardFooter {
+        width: 100%;
+        margin-top: var(--spacing-sm);
+        flex-wrap: wrap;
+        gap: 5px;
+    }
 }

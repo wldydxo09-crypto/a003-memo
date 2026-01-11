@@ -2,6 +2,7 @@
 // v2.0 - Simplified form for spreadsheet projects (2026-01-09)
 
 import { useState, useEffect } from 'react';
+import { useModalBack } from '@/hooks/useModalBack';
 import { subscribeToFeatures, addFeature, updateFeature, deleteFeature, FeatureItem } from '@/lib/firebaseService';
 import styles from './InventoryDashboard.module.css';
 import MermaidRenderer from './MermaidRenderer';
@@ -29,6 +30,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    useModalBack(isModalOpen, () => setIsModalOpen(false));
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<{
         name: string;
@@ -223,22 +225,13 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                     <div className={styles.loading}>불러오는 중...</div>
                 ) : activeTab === 'list' ? (
                     <>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
+                        <div className={styles.searchContainer}>
                             <input
                                 type="text"
                                 placeholder="🔍 기능 검색..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{
-                                    flex: 1,
-                                    height: '48px',
-                                    padding: '0 15px',
-                                    borderRadius: 'var(--radius-lg)',
-                                    border: '1px solid var(--border-color)',
-                                    background: 'var(--bg-glass)',
-                                    color: 'var(--text-primary)',
-                                    fontSize: '0.95rem'
-                                }}
+                                className={styles.searchInput}
                             />
                             <button
                                 className={styles.addBtn}
