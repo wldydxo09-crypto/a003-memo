@@ -231,8 +231,9 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 style={{
                                     flex: 1,
-                                    padding: '10px 15px',
-                                    borderRadius: 'var(--radius-md)',
+                                    height: '48px',
+                                    padding: '0 15px',
+                                    borderRadius: 'var(--radius-lg)',
                                     border: '1px solid var(--border-color)',
                                     background: 'var(--bg-glass)',
                                     color: 'var(--text-primary)',
