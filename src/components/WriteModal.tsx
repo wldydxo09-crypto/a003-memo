@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { HistoryItem, LabelType, addHistoryItem, checkDuplicateHistory } from '@/lib/firebaseService';
+import { HistoryItem, addHistoryItem, checkDuplicateHistory } from '@/lib/dataService';
 import { MENUS } from '@/lib/menus';
 import styles from './WriteModal.module.css';
 
@@ -256,7 +256,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
             const duplicates = await checkDuplicateHistory(userId, content);
             if (duplicates.length > 0) {
                 const firstDup = duplicates[0];
-                const dupDate = firstDup.createdAt?.toDate ? firstDup.createdAt.toDate().toLocaleDateString() : '최근';
+                const dupDate = firstDup.createdAt ? new Date(firstDup.createdAt).toLocaleDateString() : '최근';
                 const snippet = firstDup.content.length > 50 ? firstDup.content.substring(0, 50) + '...' : firstDup.content;
 
                 if (!confirm(`⚠️ 유사한 기록이 ${dupDate}에 있습니다.\n\n"${snippet}"\n\n저장하시겠습니까?`)) {

@@ -1,7 +1,6 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { subscribeToHistory, subscribeToUserSettings, HistoryItem } from '@/lib/firebaseService';
+import { subscribeToUserSettings } from '@/lib/firebaseService';
+import { fetchHistory } from '@/lib/dataService';
 import { useRouter } from 'next/navigation';
 import styles from './Dashboard.module.css';
 
@@ -106,17 +105,21 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
 
     // Filtered History
     useEffect(() => {
-        // Subscribe to ALL history
-        const unsubscribe = subscribeToHistory(userId, { status: 'all' }, (items) => {
-            const counts = {
-                total: items.length,
-                pending: items.filter(i => i.status === 'pending').length,
-                inProgress: items.filter(i => i.status === 'in-progress').length,
-                completed: items.filter(i => i.status === 'completed').length
-            };
-            setStats(counts);
-        });
-        return () => unsubscribe();
+        const loadStats = async () => {
+            try {
+                const items = await fetchHistory(userId); // Fetch all for stats
+                const counts = {
+                    total: items.length,
+                    pending: items.filter((i: any) => i.status === 'pending').length,
+                    inProgress: items.filter((i: any) => i.status === 'in-progress').length,
+                    completed: items.filter((i: any) => i.status === 'completed').length
+                };
+                setStats(counts);
+            } catch (e) {
+                console.error("Failed to load stats", e);
+            }
+        };
+        loadStats();
     }, [userId]);
 
     // Sync subMenus to localStorage for WriteModal auto-classification
