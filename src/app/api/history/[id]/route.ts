@@ -4,10 +4,10 @@ import { ObjectId } from 'mongodb';
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params;
         const updates = await request.json();
 
         // Remove fields that shouldn't be updated directly via this generic route if strictly needed,
@@ -67,10 +67,10 @@ export async function PUT(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params;
         const db = await getDatabase();
         const collection = db.collection('history');
 
