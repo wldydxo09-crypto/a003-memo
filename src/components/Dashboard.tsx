@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { subscribeToUserSettings } from '@/lib/firebaseService';
 import { fetchHistory } from '@/lib/dataService';
 import { useRouter } from 'next/navigation';
@@ -414,10 +415,11 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
             </div>
 
             {/* Event Creation Modal */}
-            {isEventModalOpen && eventModalDate && (
+            {/* Event Creation Modal - Portaled to Body to avoid Z-Index/Overflow issues */}
+            {isEventModalOpen && eventModalDate && typeof document !== 'undefined' && createPortal(
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999,
                     backdropFilter: 'blur(5px)'
                 }}>
                     <div style={{
@@ -494,7 +496,8 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -5,6 +5,14 @@
 
 const API_BASE = '/api';
 
+export interface Comment {
+    id: string; // uuid
+    content: string;
+    createdAt: string; // ISO date
+    userId: string;
+    userName?: string; // Optional display name
+}
+
 export interface HistoryItem {
     id?: string;
     _id?: string;
@@ -22,6 +30,7 @@ export interface HistoryItem {
     triggerInfo?: string | null;
     calendarEventId?: string;
     priority?: 'normal' | 'high';
+    comments?: Comment[]; // Added comments field
     createdAt?: string | Date; // API returns string, we might need Date
     updatedAt?: string | Date;
 }
@@ -104,6 +113,18 @@ export const checkDuplicateHistory = async (userId: string, content: string): Pr
     // Logic from firebaseService was likely looking for identical content.
     // Let's return exact matches.
     return allHistory.filter(item => item.content === content || item.content.includes(content));
+};
+
+// --- Features & Settings (Optional for first pass, but good to have) ---
+// 8. Add Comment
+export const addComment = async (historyId: string, comment: string, userId: string): Promise<Comment> => {
+    const res = await fetch(`${API_BASE}/history/${historyId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: comment, userId }),
+    });
+    if (!res.ok) throw new Error('Failed to add comment');
+    return res.json();
 };
 
 // --- Features & Settings (Optional for first pass, but good to have) ---

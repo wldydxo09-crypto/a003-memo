@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchHistory, toggleHistoryStatus, updateHistoryItem, deleteHistoryItem, HistoryItem, toggleHistoryPriority } from '@/lib/dataService';
+import { fetchHistory, toggleHistoryStatus, updateHistoryItem, deleteHistoryItem, HistoryItem, toggleHistoryPriority, addComment } from '@/lib/dataService';
 import styles from './HistoryList.module.css';
 
 interface HistoryListProps {
@@ -40,6 +40,10 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // Sort Order
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editContent, setEditContent] = useState('');
+
+    // Comment States
+    const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+    const [newComment, setNewComment] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const loadItems = async () => {
@@ -138,6 +142,59 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         } catch (error) {
             console.error('Update error:', error);
             alert('수정에 실패했습니다.');
+        }
+    };
+
+    const handleAddComment = async (historyId: string, comment: string) => {
+        if (!comment.trim()) return;
+
+        // Optimistic Update
+        const tempId = crypto.randomUUID();
+        const tempComment = {
+            id: tempId,
+            content: comment,
+            createdAt: new Date().toISOString(),
+            userId: userId
+        };
+
+        setItems(prev => prev.map(item => {
+            if (item.id === historyId) {
+                return {
+                    ...item,
+                    comments: [...(item.comments || []), tempComment]
+                };
+            }
+            return item;
+        }));
+
+        // Clear input immediately
+        setNewComment(prev => ({ ...prev, [historyId]: '' }));
+
+        try {
+            const addedComment = await addComment(historyId, comment, userId);
+            // Update with real ID from server
+            setItems(prev => prev.map(item => {
+                if (item.id === historyId) {
+                    return {
+                        ...item,
+                        comments: item.comments?.map(c => c.id === tempId ? addedComment : c)
+                    };
+                }
+                return item;
+            }));
+        } catch (error) {
+            console.error('Failed to add comment:', error);
+            alert('댓글 등록에 실패했습니다.');
+            // Revert on failure
+            setItems(prev => prev.map(item => {
+                if (item.id === historyId) {
+                    return {
+                        ...item,
+                        comments: item.comments?.filter(c => c.id !== tempId)
+                    };
+                }
+                return item;
+            }));
         }
     };
 
@@ -491,8 +548,64 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                 </div>
                             )}
 
+                            {/* Comments Section */}
+                            <div className={styles.commentsSection}>
+                                <button
+                                    className={styles.commentToggleBtn}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedComments(prev => ({ ...prev, [item.id!]: !prev[item.id!] }));
+                                    }}
+                                >
+                                    💬 댓글 {item.comments?.length || 0}
+                                </button>
+
+                                {expandedComments[item.id!] && (
+                                    <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
+                                        {/* Comment List */}
+                                        <div className={styles.commentList}>
+                                            {item.comments && item.comments.length > 0 ? (
+                                                item.comments.map(comment => (
+                                                    <div key={comment.id} className={styles.commentItem}>
+                                                        <div className={styles.commentHeader}>
+                                                            <span className={styles.commentUser}>사용자</span>
+                                                            <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
+                                                        </div>
+                                                        <div className={styles.commentContent}>{comment.content}</div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className={styles.noComments}>댓글이 없습니다.</div>
+                                            )}
+                                        </div>
+
+                                        {/* Add Comment Input */}
+                                        <div className={styles.commentInputBox}>
+                                            <input
+                                                type="text"
+                                                placeholder="댓글을 입력하세요..."
+                                                value={newComment[item.id!] || ''}
+                                                onChange={(e) => setNewComment(prev => ({ ...prev, [item.id!]: e.target.value }))}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleAddComment(item.id!, newComment[item.id!] || '');
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => handleAddComment(item.id!, newComment[item.id!] || '')}
+                                                disabled={!newComment[item.id!]?.trim()}
+                                            >
+                                                등록
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Extra Info */}
-                            {(item.sheetName || item.triggerInfo) && (
+                            {(item.sheetName || item.triggerInfo || item.emailSent) && (
                                 <div className={styles.cardFooter}>
                                     {item.sheetName && (
                                         <span className={styles.footerItem}>📄 {item.sheetName}</span>

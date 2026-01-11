@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './CalendarWidget.module.css';
 
 export interface CalendarEvent {
@@ -19,7 +19,13 @@ interface CalendarWidgetProps {
 }
 
 export default function CalendarWidget({ events, selectedDate, onDateSelect }: CalendarWidgetProps) {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setCurrentDate(new Date());
+    }, []);
+
+    if (!currentDate) return null; // Avoid hydration mismatch by not rendering until client-side
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
