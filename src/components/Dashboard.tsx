@@ -333,23 +333,13 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                         {/* Right: Schedule List */}
                         <section className={styles.scheduleBoard}>
                             <div className={styles.scheduleHeader}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div className={styles.scheduleTitleGroup}>
                                     <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
                                         {selectedDate
                                             ? `📅 ${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 일정`
                                             : '📅 전체 일정'}
                                     </h2>
-                                    <label style={{
-                                        fontSize: '0.8rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                        cursor: 'pointer',
-                                        color: 'var(--text-secondary)',
-                                        background: 'var(--bg-tertiary)',
-                                        padding: '4px 8px',
-                                        borderRadius: '8px'
-                                    }}>
+                                    <label className={styles.hidePastLabel}>
                                         <input
                                             type="checkbox"
                                             checked={hidePastEvents}
