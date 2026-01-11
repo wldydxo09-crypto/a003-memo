@@ -11,7 +11,7 @@ const getBaseUrl = () => {
     // 2. In Production (Vercel), default to the main domain if env var is missing
     // This prevents "preview URLs" from breaking Google Auth
     if (process.env.NODE_ENV === 'production') {
-        return 'https://a003-memo.vercel.app';
+        return 'https://a003-memo-e6fx.vercel.app';
     }
 
     // 3. Fallback for Local Development
