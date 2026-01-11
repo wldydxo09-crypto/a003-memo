@@ -12,6 +12,7 @@ interface InventoryDashboardProps {
 
 const INITIAL_FORM = {
     name: '',
+    fileName: '',
     description: '',
     sheetNames: '', // Comma separated
     keyFunctions: '', // Format: "functionName: description" per line
@@ -31,6 +32,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<{
         name: string;
+        fileName: string;
         description: string;
         sheetNames: string;
         keyFunctions: string;
@@ -58,6 +60,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
             setEditingId(feature.id || null);
             setFormData({
                 name: feature.name,
+                fileName: (feature as any).fileName || '',
                 description: feature.description,
                 sheetNames: feature.sheetNames?.join(', ') || '',
                 keyFunctions: feature.keyFunctions?.map(f => `${f.name}: ${f.description}`).join('\n') || '',
@@ -220,14 +223,14 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                     <div className={styles.loading}>불러오는 중...</div>
                 ) : activeTab === 'list' ? (
                     <>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
                             <input
                                 type="text"
                                 placeholder="🔍 기능 검색..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 style={{
-                                    flex: 1,
+                                    flex: 3,
                                     padding: '10px 15px',
                                     borderRadius: 'var(--radius-md)',
                                     border: '1px solid var(--border-color)',
@@ -236,7 +239,11 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                     fontSize: '0.95rem'
                                 }}
                             />
-                            <button className={styles.addBtn} onClick={() => handleOpenModal()}>
+                            <button
+                                className={styles.addBtn}
+                                onClick={() => handleOpenModal()}
+                                style={{ flex: 1, minWidth: '120px' }}
+                            >
                                 <span>+ 새 기능</span>
                             </button>
                         </div>
@@ -343,6 +350,15 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="예: 구글 캘린더 연동"
                                     required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>파일명</label>
+                                <input
+                                    className={styles.input}
+                                    value={formData.fileName}
+                                    onChange={e => setFormData({ ...formData, fileName: e.target.value })}
+                                    placeholder="예: calendar_sync.gs, 자동발주.gs"
                                 />
                             </div>
                             {/* ... Rest of form ... */}
