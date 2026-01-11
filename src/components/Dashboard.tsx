@@ -48,13 +48,14 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [eventModalDate, setEventModalDate] = useState<Date | null>(null);
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventTime, setNewEventTime] = useState({ start: '09:00', end: '10:00' });
-    const [isCreatingEvent, setIsCreatingEvent] = useState(false);
     const [isAllDay, setIsAllDay] = useState(false);
+    const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
     const handleDateClick = (date: Date) => {
         console.log('📅 Date clicked:', date.toISOString(), 'Opening modal...');
         setSelectedDate(date);
         setEventModalDate(date);
+        setIsEventModalOpen(true);
         setIsEventModalOpen(true);
         setNewEventTitle('');
         setNewEventTime({ start: '09:00', end: '10:00' });
@@ -66,31 +67,27 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         if (!newEventTitle.trim() || !eventModalDate) return;
         setIsCreatingEvent(true);
         try {
-            let requestBody: any;
+            const startDateTime = new Date(eventModalDate);
+            const endDateTime = new Date(eventModalDate);
 
+            let eventBody;
             if (isAllDay) {
-                // For all-day events, use date format (YYYY-MM-DD)
-                const dateStr = eventModalDate.toISOString().split('T')[0];
-                const nextDay = new Date(eventModalDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-                const nextDayStr = nextDay.toISOString().split('T')[0];
-
-                requestBody = {
+                // All Day Event: date only (YYYY-MM-DD)
+                const dateStr = startDateTime.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                eventBody = {
                     summary: newEventTitle,
-                    startDate: dateStr,
-                    endDate: nextDayStr,
-                    isAllDay: true
+                    start: { date: dateStr },
+                    end: { date: dateStr }
                 };
             } else {
-                const startDateTime = new Date(eventModalDate);
+                // Timed Event
                 const [startH, startM] = newEventTime.start.split(':').map(Number);
                 startDateTime.setHours(startH, startM, 0);
 
-                const endDateTime = new Date(eventModalDate);
                 const [endH, endM] = newEventTime.end.split(':').map(Number);
                 endDateTime.setHours(endH, endM, 0);
 
-                requestBody = {
+                eventBody = {
                     summary: newEventTitle,
                     startDateTime: startDateTime.toISOString(),
                     endDateTime: endDateTime.toISOString(),
@@ -100,7 +97,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
             const res = await fetch('/api/calendar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(eventBody)
             });
 
             const data = await res.json();
@@ -467,22 +464,15 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                             />
                         </div>
 
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{
-                                color: isAllDay ? '#6366f1' : '#ccc',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                fontSize: '0.95rem'
-                            }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem', cursor: 'pointer' }}>
                                 <input
                                     type="checkbox"
                                     checked={isAllDay}
                                     onChange={(e) => setIsAllDay(e.target.checked)}
-                                    style={{ accentColor: '#6366f1', width: '18px', height: '18px' }}
+                                    style={{ width: '16px', height: '16px' }}
                                 />
-                                📆 종일
+                                하루 종일
                             </label>
                         </div>
 
