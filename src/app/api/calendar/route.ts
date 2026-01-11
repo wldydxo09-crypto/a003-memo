@@ -5,7 +5,8 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
     try {
-        const { summary, description, startDateTime, endDateTime, location } = await request.json();
+        const body = await request.json();
+        const { summary, description, startDateTime, endDateTime, location } = body;
 
         // 1. Get Token from Cookie
         const cookieStore = await cookies();
@@ -33,19 +34,39 @@ export async function POST(request: NextRequest) {
         // 3. Create Event
         const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-        const event = {
-            summary: summary || '새로운 일정',
-            description: description || '스마트 비서가 생성한 일정입니다.',
-            start: {
-                dateTime: startDateTime, // ISO format: '2026-01-08T14:00:00'
-                timeZone: 'Asia/Seoul',
-            },
-            end: {
-                dateTime: endDateTime || startDateTime, // If same, technically 0 duration, but better to set +1 hour
-                timeZone: 'Asia/Seoul',
-            },
-            location: location,
-        };
+        // Check if all-day event
+        const isAllDay = body.isAllDay || (body.startDate && body.endDate);
+
+        let event: any;
+        if (isAllDay) {
+            // All-day event uses 'date' format (YYYY-MM-DD)
+            event = {
+                summary: summary || '새로운 일정',
+                description: description || '스마트 비서가 생성한 일정입니다.',
+                start: {
+                    date: body.startDate,
+                },
+                end: {
+                    date: body.endDate,
+                },
+                location: location,
+            };
+        } else {
+            // Timed event uses 'dateTime' format
+            event = {
+                summary: summary || '새로운 일정',
+                description: description || '스마트 비서가 생성한 일정입니다.',
+                start: {
+                    dateTime: startDateTime,
+                    timeZone: 'Asia/Seoul',
+                },
+                end: {
+                    dateTime: endDateTime || startDateTime,
+                    timeZone: 'Asia/Seoul',
+                },
+                location: location,
+            };
+        }
 
         const response = await calendar.events.insert({
             calendarId: 'primary',

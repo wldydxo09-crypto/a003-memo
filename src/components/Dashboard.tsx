@@ -49,6 +49,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventTime, setNewEventTime] = useState({ start: '09:00', end: '10:00' });
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+    const [isAllDay, setIsAllDay] = useState(false);
 
     const handleDateClick = (date: Date) => {
         console.log('📅 Date clicked:', date.toISOString(), 'Opening modal...');
@@ -57,6 +58,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         setIsEventModalOpen(true);
         setNewEventTitle('');
         setNewEventTime({ start: '09:00', end: '10:00' });
+        setIsAllDay(false);
         console.log('📅 Modal should be open now, isEventModalOpen: true');
     };
 
@@ -64,22 +66,41 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         if (!newEventTitle.trim() || !eventModalDate) return;
         setIsCreatingEvent(true);
         try {
-            const startDateTime = new Date(eventModalDate);
-            const [startH, startM] = newEventTime.start.split(':').map(Number);
-            startDateTime.setHours(startH, startM, 0);
+            let requestBody: any;
 
-            const endDateTime = new Date(eventModalDate);
-            const [endH, endM] = newEventTime.end.split(':').map(Number);
-            endDateTime.setHours(endH, endM, 0);
+            if (isAllDay) {
+                // For all-day events, use date format (YYYY-MM-DD)
+                const dateStr = eventModalDate.toISOString().split('T')[0];
+                const nextDay = new Date(eventModalDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const nextDayStr = nextDay.toISOString().split('T')[0];
+
+                requestBody = {
+                    summary: newEventTitle,
+                    startDate: dateStr,
+                    endDate: nextDayStr,
+                    isAllDay: true
+                };
+            } else {
+                const startDateTime = new Date(eventModalDate);
+                const [startH, startM] = newEventTime.start.split(':').map(Number);
+                startDateTime.setHours(startH, startM, 0);
+
+                const endDateTime = new Date(eventModalDate);
+                const [endH, endM] = newEventTime.end.split(':').map(Number);
+                endDateTime.setHours(endH, endM, 0);
+
+                requestBody = {
+                    summary: newEventTitle,
+                    startDateTime: startDateTime.toISOString(),
+                    endDateTime: endDateTime.toISOString(),
+                };
+            }
 
             const res = await fetch('/api/calendar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    summary: newEventTitle,
-                    startDateTime: startDateTime.toISOString(),
-                    endDateTime: endDateTime.toISOString(),
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await res.json();
@@ -446,32 +467,53 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>시작 시간</label>
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{
+                                color: isAllDay ? '#6366f1' : '#ccc',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                fontSize: '0.95rem'
+                            }}>
                                 <input
-                                    type="time"
-                                    value={newEventTime.start}
-                                    onChange={(e) => setNewEventTime({ ...newEventTime, start: e.target.value })}
-                                    style={{
-                                        width: '100%', padding: '10px', borderRadius: '8px',
-                                        background: '#252525', border: '1px solid #444', color: 'white'
-                                    }}
+                                    type="checkbox"
+                                    checked={isAllDay}
+                                    onChange={(e) => setIsAllDay(e.target.checked)}
+                                    style={{ accentColor: '#6366f1', width: '18px', height: '18px' }}
                                 />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>종료 시간</label>
-                                <input
-                                    type="time"
-                                    value={newEventTime.end}
-                                    onChange={(e) => setNewEventTime({ ...newEventTime, end: e.target.value })}
-                                    style={{
-                                        width: '100%', padding: '10px', borderRadius: '8px',
-                                        background: '#252525', border: '1px solid #444', color: 'white'
-                                    }}
-                                />
-                            </div>
+                                📆 종일
+                            </label>
                         </div>
+
+                        {!isAllDay && (
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>시작 시간</label>
+                                    <input
+                                        type="time"
+                                        value={newEventTime.start}
+                                        onChange={(e) => setNewEventTime({ ...newEventTime, start: e.target.value })}
+                                        style={{
+                                            width: '100%', padding: '10px', borderRadius: '8px',
+                                            background: '#252525', border: '1px solid #444', color: 'white'
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ color: '#ccc', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>종료 시간</label>
+                                    <input
+                                        type="time"
+                                        value={newEventTime.end}
+                                        onChange={(e) => setNewEventTime({ ...newEventTime, end: e.target.value })}
+                                        style={{
+                                            width: '100%', padding: '10px', borderRadius: '8px',
+                                            background: '#252525', border: '1px solid #444', color: 'white'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                             <button
