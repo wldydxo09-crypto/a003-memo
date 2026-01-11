@@ -311,7 +311,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                                     <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
                                         {selectedDate
                                             ? `📅 ${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 일정`
-                                            : '📅 전체 일정'}
+                                            : '📅 전체 일정 (날짜를 클릭하세요)'}
                                     </h2>
                                     <label style={{
                                         fontSize: '0.8rem',
