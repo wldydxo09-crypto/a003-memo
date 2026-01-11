@@ -127,5 +127,24 @@ export const addComment = async (historyId: string, comment: string, userId: str
     return res.json();
 };
 
+// 9. Edit Comment
+export const editComment = async (historyId: string, commentId: string, content: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/history/${historyId}/comments`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId, content }),
+    });
+    if (!res.ok) throw new Error('Failed to edit comment');
+};
+
+// 10. Delete Comment
+export const deleteComment = async (historyId: string, commentId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/history/${historyId}/comments?commentId=${commentId}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete comment');
+};
+
 // --- Features & Settings (Optional for first pass, but good to have) ---
 // We can implement these later or now. Let's stick to History first.
+

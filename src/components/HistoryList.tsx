@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchHistory, toggleHistoryStatus, updateHistoryItem, deleteHistoryItem, HistoryItem, toggleHistoryPriority, addComment } from '@/lib/dataService';
+import { fetchHistory, toggleHistoryStatus, updateHistoryItem, deleteHistoryItem, HistoryItem, toggleHistoryPriority, addComment, editComment, deleteComment } from '@/lib/dataService';
 import styles from './HistoryList.module.css';
 
 interface HistoryListProps {
@@ -44,6 +44,8 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
     // Comment States
     const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
     const [newComment, setNewComment] = useState<Record<string, string>>({});
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+    const [editingCommentContent, setEditingCommentContent] = useState('');
 
     useEffect(() => {
         const loadItems = async () => {
@@ -195,6 +197,55 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                 }
                 return item;
             }));
+        }
+    };
+
+    const handleEditComment = async (historyId: string, commentId: string) => {
+        if (!editingCommentContent.trim()) return;
+
+        // Optimistic update
+        setItems(prev => prev.map(item => {
+            if (item.id === historyId) {
+                return {
+                    ...item,
+                    comments: item.comments?.map(c =>
+                        c.id === commentId ? { ...c, content: editingCommentContent } : c
+                    )
+                };
+            }
+            return item;
+        }));
+
+        setEditingCommentId(null);
+        setEditingCommentContent('');
+
+        try {
+            await editComment(historyId, commentId, editingCommentContent);
+        } catch (error) {
+            console.error('Failed to edit comment:', error);
+            alert('댓글 수정에 실패했습니다.');
+        }
+    };
+
+    const handleDeleteComment = async (historyId: string, commentId: string) => {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+        // Optimistic update
+        setItems(prev => prev.map(item => {
+            if (item.id === historyId) {
+                return {
+                    ...item,
+                    comments: item.comments?.filter(c => c.id !== commentId)
+                };
+            }
+            return item;
+        }));
+
+        try {
+            await deleteComment(historyId, commentId);
+        } catch (error) {
+            console.error('Failed to delete comment:', error);
+            alert('댓글 삭제에 실패했습니다.');
         }
     };
 
@@ -570,8 +621,41 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                                         <div className={styles.commentHeader}>
                                                             <span className={styles.commentUser}>사용자</span>
                                                             <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
+                                                            <div className={styles.commentActions}>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingCommentId(comment.id);
+                                                                        setEditingCommentContent(comment.content);
+                                                                    }}
+                                                                    title="수정"
+                                                                >✏️</button>
+                                                                <button
+                                                                    onClick={() => handleDeleteComment(item.id!, comment.id)}
+                                                                    title="삭제"
+                                                                >🗑️</button>
+                                                            </div>
                                                         </div>
-                                                        <div className={styles.commentContent}>{comment.content}</div>
+                                                        {editingCommentId === comment.id ? (
+                                                            <div className={styles.commentEditBox}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCommentContent}
+                                                                    onChange={(e) => setEditingCommentContent(e.target.value)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            handleEditComment(item.id!, comment.id);
+                                                                        } else if (e.key === 'Escape') {
+                                                                            setEditingCommentId(null);
+                                                                        }
+                                                                    }}
+                                                                    autoFocus
+                                                                />
+                                                                <button onClick={() => handleEditComment(item.id!, comment.id)}>저장</button>
+                                                                <button onClick={() => setEditingCommentId(null)}>취소</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className={styles.commentContent}>{comment.content}</div>
+                                                        )}
                                                     </div>
                                                 ))
                                             ) : (

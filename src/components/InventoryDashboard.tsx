@@ -24,6 +24,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
     const [activeTab, setActiveTab] = useState<'list' | 'architecture'>('list');
     const [features, setFeatures] = useState<FeatureItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -219,46 +220,74 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                     <div className={styles.loading}>불러오는 중...</div>
                 ) : activeTab === 'list' ? (
                     <>
-                        <button className={styles.addBtn} onClick={() => handleOpenModal()}>
-                            <span>+ 새 기능 등록하기</span>
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                            <input
+                                type="text"
+                                placeholder="🔍 기능 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 15px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-glass)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.95rem'
+                                }}
+                            />
+                            <button className={styles.addBtn} onClick={() => handleOpenModal()}>
+                                <span>+ 새 기능</span>
+                            </button>
+                        </div>
 
                         <div className={styles.list}>
-                            {features.map(f => (
-                                <div key={f.id} className={styles.card}>
-                                    <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                        <span
-                                            className={styles.statusBadge}
-                                            style={{ backgroundColor: `${getStatusColor(f.status)}20`, color: getStatusColor(f.status) }}
-                                        >
-                                            {getStatusText(f.status)}
-                                        </span>
-                                        <div style={{ gap: '5px', display: 'flex' }}>
-                                            <button
-                                                onClick={() => handleOpenModal(f)}
-                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
-                                            >✏️</button>
-                                            <button
-                                                onClick={() => f.id && handleDelete(f.id)}
-                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
-                                            >🗑️</button>
+                            {features
+                                .filter(f => {
+                                    if (!searchTerm.trim()) return true;
+                                    const term = searchTerm.toLowerCase();
+                                    return (
+                                        f.name.toLowerCase().includes(term) ||
+                                        f.description.toLowerCase().includes(term) ||
+                                        f.sheetNames?.some(s => s.toLowerCase().includes(term)) ||
+                                        f.triggerInfo?.toLowerCase().includes(term)
+                                    );
+                                })
+                                .map(f => (
+                                    <div key={f.id} className={styles.card}>
+                                        <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                            <span
+                                                className={styles.statusBadge}
+                                                style={{ backgroundColor: `${getStatusColor(f.status)}20`, color: getStatusColor(f.status) }}
+                                            >
+                                                {getStatusText(f.status)}
+                                            </span>
+                                            <div style={{ gap: '5px', display: 'flex' }}>
+                                                <button
+                                                    onClick={() => handleOpenModal(f)}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
+                                                >✏️</button>
+                                                <button
+                                                    onClick={() => f.id && handleDelete(f.id)}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem' }}
+                                                >🗑️</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <h3 className={styles.cardTitle}>{f.name}</h3>
-                                    <p className={styles.cardDesc}>{f.description}</p>
+                                        <h3 className={styles.cardTitle}>{f.name}</h3>
+                                        <p className={styles.cardDesc}>{f.description}</p>
 
-                                    <div className={styles.cardFooter}>
-                                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                                            {f.techStack.slice(0, 3).map(tech => (
-                                                <span key={tech} style={{ fontSize: '0.75rem', padding: '2px 6px', background: '#eee', borderRadius: '4px', color: '#555' }}>
-                                                    {tech}
-                                                </span>
-                                            ))}
-                                            {f.techStack.length > 3 && <span style={{ fontSize: '0.75rem' }}>+{f.techStack.length - 3}</span>}
+                                        <div className={styles.cardFooter}>
+                                            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                                                {f.techStack.slice(0, 3).map(tech => (
+                                                    <span key={tech} style={{ fontSize: '0.75rem', padding: '2px 6px', background: '#eee', borderRadius: '4px', color: '#555' }}>
+                                                        {tech}
+                                                    </span>
+                                                ))}
+                                                {f.techStack.length > 3 && <span style={{ fontSize: '0.75rem' }}>+{f.techStack.length - 3}</span>}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     </>
                 ) : (

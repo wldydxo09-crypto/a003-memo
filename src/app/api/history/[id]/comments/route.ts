@@ -4,10 +4,10 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(
     request: Request,
-    { params }: { params: Promise<{ id: string }> } // Params is a Promise in newer Next.js
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params; // Await params to get id
+        const { id } = await params;
         const { content, userId } = await request.json();
 
         if (!content || !userId) {
@@ -28,7 +28,7 @@ export async function POST(
         };
 
         const result = await collection.updateOne(
-            { id: id }, // Match by custom string ID (not _id)
+            { id: id },
             {
                 $push: { comments: newComment } as any
             }
@@ -51,3 +51,96 @@ export async function POST(
         );
     }
 }
+
+// Edit comment
+export async function PUT(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const { commentId, content } = await request.json();
+
+        if (!commentId || !content) {
+            return NextResponse.json(
+                { success: false, error: 'commentId and content are required' },
+                { status: 400 }
+            );
+        }
+
+        const db = await getDatabase();
+        const collection = db.collection('history');
+
+        const result = await collection.updateOne(
+            { id: id, 'comments.id': commentId },
+            {
+                $set: {
+                    'comments.$.content': content,
+                    'comments.$.updatedAt': new Date().toISOString()
+                }
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Comment not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({ success: true, commentId, content });
+
+    } catch (error: any) {
+        console.error('Failed to update comment:', error);
+        return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 500 }
+        );
+    }
+}
+
+// Delete comment
+export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const { searchParams } = new URL(request.url);
+        const commentId = searchParams.get('commentId');
+
+        if (!commentId) {
+            return NextResponse.json(
+                { success: false, error: 'commentId is required' },
+                { status: 400 }
+            );
+        }
+
+        const db = await getDatabase();
+        const collection = db.collection('history');
+
+        const result = await collection.updateOne(
+            { id: id },
+            {
+                $pull: { comments: { id: commentId } } as any
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return NextResponse.json(
+                { success: false, error: 'History item not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({ success: true, commentId });
+
+    } catch (error: any) {
+        console.error('Failed to delete comment:', error);
+        return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 500 }
+        );
+    }
+}
+
