@@ -223,7 +223,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
                             <span>+ 새 기능 등록하기</span>
                         </button>
 
-                        <div className={styles.grid}>
+                        <div className={styles.list}>
                             {features.map(f => (
                                 <div key={f.id} className={styles.card}>
                                     <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -367,11 +367,12 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
 
                                 <div style={{ marginBottom: '10px' }}>
                                     <label className={styles.label} style={{ fontSize: '0.8rem' }}>트리거 정보</label>
-                                    <input
-                                        className={styles.input}
+                                    <textarea
+                                        className={styles.textarea}
                                         value={formData.triggerInfo}
                                         onChange={e => setFormData({ ...formData, triggerInfo: e.target.value })}
-                                        placeholder="예: 매일 오전 9시 sendEmail 실행"
+                                        placeholder="예: 매일 오전 9시 sendEmail 실행&#10;시트 편집 시 onEdit 트리거&#10;폼 제출 시 onFormSubmit 트리거"
+                                        rows={3}
                                     />
                                 </div>
 
