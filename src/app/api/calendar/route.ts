@@ -5,7 +5,8 @@ import { auth } from '@/auth';
 
 export async function POST(request: NextRequest) {
     try {
-        const { summary, description, startDateTime, endDateTime, location } = await request.json();
+        const body = await request.json();
+        const { summary, description, startDateTime, endDateTime, location } = body;
 
         // 1. Get Token from Session
         const session = await auth();
@@ -33,23 +34,31 @@ export async function POST(request: NextRequest) {
         // 3. Create Event
         const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-        const event = {
+        let eventResource: any = {
             summary: summary || '새로운 일정',
             description: description || '스마트 비서가 생성한 일정입니다.',
-            start: {
-                dateTime: startDateTime, // ISO format: '2026-01-08T14:00:00'
-                timeZone: 'Asia/Seoul',
-            },
-            end: {
-                dateTime: endDateTime || startDateTime, // If same, technically 0 duration, but better to set +1 hour
-                timeZone: 'Asia/Seoul',
-            },
             location: location,
         };
 
+        if (body.start && body.end) {
+            // Client provided explicit start/end (likely All-Day event with 'date')
+            eventResource.start = body.start;
+            eventResource.end = body.end;
+        } else {
+            // Default/Legacy behavior (Timed event with startDateTime)
+            eventResource.start = {
+                dateTime: startDateTime,
+                timeZone: 'Asia/Seoul',
+            };
+            eventResource.end = {
+                dateTime: endDateTime || startDateTime,
+                timeZone: 'Asia/Seoul',
+            };
+        }
+
         const response = await calendar.events.insert({
             calendarId: 'primary',
-            requestBody: event,
+            requestBody: eventResource,
         });
 
         return NextResponse.json({

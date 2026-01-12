@@ -657,7 +657,12 @@
     cursor: pointer;
 }
 
-.commentEditBox button:last-child {
-    background: var(--bg-tertiary);
+
+.searchCount {
+    margin-left: auto;
+    font-size: 0.85rem;
     color: var(--text-secondary);
+    background: var(--bg-glass);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
 }

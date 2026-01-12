@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useModalBack } from '@/hooks/useModalBack';
 
@@ -22,8 +22,10 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [searchQuery, setSearchQuery] = useState('');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+    // Stable handler for settings modal
+    const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), []);
     // Handle Back Button
-    useModalBack(isSettingsOpen, () => setIsSettingsOpen(false));
+    useModalBack(isSettingsOpen, handleCloseSettings);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,12 +47,14 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [calendarTab, setCalendarTab] = useState<'today' | 'week' | 'month'>('month'); // Default to month for better widget view
     const [loadingCalendar, setLoadingCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
     const [hidePastEvents, setHidePastEvents] = useState(true); // Default to true (Hide by default)
 
     // Event Creation Modal
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-    // Handle Back Button for Event Modal
-    useModalBack(isEventModalOpen, () => setIsEventModalOpen(false));
+    // Stable handler for event modal
+    const handleCloseEventModal = useCallback(() => setIsEventModalOpen(false), []);
+    useModalBack(isEventModalOpen, handleCloseEventModal);
 
     const [eventModalDate, setEventModalDate] = useState<Date | null>(null);
     const [newEventTitle, setNewEventTitle] = useState('');
@@ -173,34 +177,35 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     }, [userId]);
 
     // Fetch Calendar
-    const fetchEvents = async () => {
+    const fetchEvents = useCallback(async () => {
         setLoadingCalendar(true);
         try {
-            const now = new Date();
             // Start of events range
-            // If month view, we need full month. 
-            // Actually API takes timeMin/timeMax.
+            // If month view, we need full month based on calendarViewDate
+            const viewBase = new Date(calendarViewDate);
 
             let timeMin = new Date().toISOString();
             let timeMax = undefined;
 
             if (calendarTab === 'today') {
+                const now = new Date();
                 const start = new Date(now.setHours(0, 0, 0, 0));
                 timeMin = start.toISOString();
                 const end = new Date(now);
                 end.setDate(end.getDate() + 1);
                 timeMax = end.toISOString();
             } else if (calendarTab === 'week') {
+                const now = new Date();
                 const start = new Date(now.setHours(0, 0, 0, 0));
                 timeMin = start.toISOString();
                 const end = new Date(now);
                 end.setDate(end.getDate() + 7);
                 timeMax = end.toISOString();
             } else if (calendarTab === 'month') {
-                const start = new Date(now.setDate(1)); // 1st of month
+                const start = new Date(viewBase.setDate(1)); // 1st of VIEWED month
                 start.setHours(0, 0, 0, 0);
                 timeMin = start.toISOString();
-                const end = new Date(now);
+                const end = new Date(viewBase);
                 end.setMonth(end.getMonth() + 1);
                 end.setDate(0); // Last day
                 timeMax = end.toISOString();
@@ -217,11 +222,11 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         } finally {
             setLoadingCalendar(false);
         }
-    };
+    }, [calendarTab, calendarViewDate]);
 
     useEffect(() => {
         fetchEvents();
-    }, [calendarTab]);
+    }, [fetchEvents]);
 
     const handleDeleteEvent = async (eventId: string) => {
         if (!confirm('정말로 이 일정을 삭제하시겠습니까? (구글 캘린더에서도 삭제됩니다)')) return;
@@ -295,8 +300,8 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                 // Current viewing month (based on selectedDate if exists, or current real month? 
                 // Wait, CalendarWidget has 'currentDate' internal state, but Dashboard doesn't know it.
                 // Usually 'month' tab means 'This current month'.
-                return eDate.getMonth() === today.getMonth() &&
-                    eDate.getFullYear() === today.getFullYear();
+                return eDate.getMonth() === calendarViewDate.getMonth() &&
+                    eDate.getFullYear() === calendarViewDate.getFullYear();
             }
             return true;
         })
@@ -342,12 +347,16 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
 
                     {/* 2. Calendar & Schedule Grid */}
                     <div className={styles.contentGrid}>
-                        {/* Left: Calendar Widget */}
                         <section className={styles.calendarSection}>
                             <CalendarWidget
                                 events={events}
-                                onDateSelect={handleDateClick}
+                                onDateSelect={(date) => {
+                                    handleDateClick(date);
+                                    setCalendarViewDate(date); // Sync view if selected
+                                }}
                                 selectedDate={selectedDate}
+                                currentDate={calendarViewDate}
+                                onNavigate={setCalendarViewDate}
                             />
                         </section>
 
@@ -453,11 +462,15 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
             {/* Event Creation Modal */}
             {/* Event Creation Modal - Portaled to Body to avoid Z-Index/Overflow issues */}
             {isEventModalOpen && eventModalDate && typeof document !== 'undefined' && createPortal(
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999,
-                    backdropFilter: 'blur(5px)'
-                }}>
+                <div
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsEventModalOpen(false);
+                    }}
+                    style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999,
+                        backdropFilter: 'blur(5px)'
+                    }}>
                     <div style={{
                         background: '#1e1e1e', padding: '30px', borderRadius: '16px', width: '400px', maxWidth: '90%',
                         border: '1px solid #333', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'

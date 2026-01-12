@@ -71,8 +71,19 @@ export async function PUT(
         const db = await getDatabase();
         const collection = db.collection('history');
 
+        let query: any = { 'comments.id': commentId };
+
+        if (ObjectId.isValid(id)) {
+            query.$or = [
+                { id: id },
+                { _id: new ObjectId(id) }
+            ];
+        } else {
+            query.id = id;
+        }
+
         const result = await collection.updateOne(
-            { id: id, 'comments.id': commentId },
+            query,
             {
                 $set: {
                     'comments.$.content': content,
@@ -119,8 +130,19 @@ export async function DELETE(
         const db = await getDatabase();
         const collection = db.collection('history');
 
+        let query: any = {};
+
+        if (ObjectId.isValid(id)) {
+            query.$or = [
+                { id: id },
+                { _id: new ObjectId(id) }
+            ];
+        } else {
+            query.id = id;
+        }
+
         const result = await collection.updateOne(
-            { id: id },
+            query,
             {
                 $pull: { comments: { id: commentId } } as any
             }

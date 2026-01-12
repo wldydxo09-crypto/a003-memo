@@ -16,16 +16,17 @@ interface CalendarWidgetProps {
     events: CalendarEvent[];
     selectedDate?: Date | null;
     onDateSelect?: (date: Date) => void;
+    currentDate?: Date; // Parent controlled date
+    onNavigate?: (date: Date) => void;
 }
 
-export default function CalendarWidget({ events, selectedDate, onDateSelect }: CalendarWidgetProps) {
-    const [currentDate, setCurrentDate] = useState<Date | null>(null);
+export default function CalendarWidget({ events, selectedDate, onDateSelect, currentDate: propDate, onNavigate }: CalendarWidgetProps) {
+    // Internal state for fallback or if not controlled
+    const [internalDate, setInternalDate] = useState<Date>(new Date());
 
-    useEffect(() => {
-        setCurrentDate(new Date());
-    }, []);
+    const displayDate = propDate || internalDate;
 
-    if (!currentDate) return null; // Avoid hydration mismatch by not rendering until client-side
+    if (!displayDate) return null;
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -40,15 +41,25 @@ export default function CalendarWidget({ events, selectedDate, onDateSelect }: C
     };
 
     const prevMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+        const newDate = new Date(displayDate.getFullYear(), displayDate.getMonth() - 1, 1);
+        if (onNavigate) {
+            onNavigate(newDate);
+        } else {
+            setInternalDate(newDate);
+        }
     };
 
     const nextMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+        const newDate = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 1);
+        if (onNavigate) {
+            onNavigate(newDate);
+        } else {
+            setInternalDate(newDate);
+        }
     };
 
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDay = getFirstDayOfMonth(currentDate);
+    const daysInMonth = getDaysInMonth(displayDate);
+    const firstDay = getFirstDayOfMonth(displayDate);
     const today = new Date();
 
     const renderDays = () => {
@@ -61,7 +72,7 @@ export default function CalendarWidget({ events, selectedDate, onDateSelect }: C
 
         // Days
         for (let d = 1; d <= daysInMonth; d++) {
-            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+            const date = new Date(displayDate.getFullYear(), displayDate.getMonth(), d);
             const isToday = date.getDate() === today.getDate() &&
                 date.getMonth() === today.getMonth() &&
                 date.getFullYear() === today.getFullYear();
@@ -74,8 +85,8 @@ export default function CalendarWidget({ events, selectedDate, onDateSelect }: C
             const dayEvents = events.filter(e => {
                 const eDate = e.start.dateTime ? new Date(e.start.dateTime) : new Date(e.start.date || '');
                 return eDate.getDate() === d &&
-                    eDate.getMonth() === currentDate.getMonth() &&
-                    eDate.getFullYear() === currentDate.getFullYear();
+                    eDate.getMonth() === displayDate.getMonth() &&
+                    eDate.getFullYear() === displayDate.getFullYear();
             });
 
             days.push(
@@ -104,7 +115,7 @@ export default function CalendarWidget({ events, selectedDate, onDateSelect }: C
         <div className={styles.container}>
             <div className={styles.header}>
                 <span className={styles.title}>
-                    {currentDate.getFullYear()}년 {monthNames[currentDate.getMonth()]}
+                    {displayDate.getFullYear()}년 {monthNames[displayDate.getMonth()]}
                 </span>
                 <div style={{ display: 'flex', gap: '5px' }}>
                     <button className={styles.navBtn} onClick={prevMonth}>&lt;</button>

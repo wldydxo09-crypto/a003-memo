@@ -45,8 +45,9 @@ function HomeContent() {
 
   const loading = status === 'loading';
 
-  // Use searchParams for current menu, default to 'dashboard'
-  const currentMenu = searchParams.get('menu') || 'dashboard';
+  // Use standard state for ephemeral navigation (reset on refresh)
+  // Default to 'dashboard'
+  const [currentMenu, setCurrentMenu] = useState('dashboard');
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -59,7 +60,7 @@ function HomeContent() {
 
   // History Filter State
   const [historyFilter, setHistoryFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
-  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historySearchQuery, setHistorySearchQuery] = useState<{ query: string; timestamp: number }>({ query: '', timestamp: 0 });
   const [historyLabel, setHistoryLabel] = useState<string | null>(null);
 
   // Work Menus State
@@ -103,31 +104,7 @@ function HomeContent() {
   // Handle Back Button for Mobile Sidebar
   useModalBack(isMobileOpen, () => setIsMobileOpen(false));
 
-  // --- Advanced Back Button & History Management ---
-  // Replaced manual history management with Next.js Router
-
-  // Wrapper for Menu Change to support History
-  // We will pass this to Sidebar instead of setCurrentMenu directly
-  const handleMenuChangeWithHistory = (menuId: string) => {
-    if (menuId === currentMenu) return;
-
-    // Use Router Push
-    router.push(`?menu=${menuId}`);
-    // setCurrentMenu(menuId); -> No longer needed, as searchParams will update
-  };
-
-  // Double Back to Exit Logic
-  // With standard router, browser back button just works.
-  // We can't implement "Double Tap to Exit" perfectly in a standard web page 
-  // without trapping the user, which is bad practice/hard. 
-  // But we can ensure "Back -> Dashboard".
-
-  // We need to update Sidebar's onMenuChange prop
-
-  useEffect(() => {
-    // Session is handled by useSession, no manual listener needed
-  }, []);
-
+  // Navigation Handlers (Ephemeral, no URL change)
   const handleOpenWrite = (menuId: string = 'work') => {
     setWriteInitialMenu(menuId);
     setIsWriteModalOpen(true);
@@ -141,13 +118,12 @@ function HomeContent() {
     setHistoryFilter(filter);
     setHistoryLabel(label || null);
     if (searchQuery !== undefined) {
-      setHistorySearchQuery(searchQuery);
+      setHistorySearchQuery({ query: searchQuery, timestamp: Date.now() });
     } else {
-      setHistorySearchQuery('');
+      setHistorySearchQuery({ query: '', timestamp: Date.now() });
     }
 
-    // Use History Push
-    router.push(`?menu=history`);
+    setCurrentMenu('history');
   };
 
   if (loading) return <div className={styles.loading}>Loading...</div>;
@@ -197,7 +173,11 @@ function HomeContent() {
     <div className={styles.layout}>
       <Sidebar
         currentMenu={currentMenu}
-        onMenuChange={handleMenuChangeWithHistory}
+        onMenuChange={(menuId) => {
+          setHistorySearchQuery({ query: '', timestamp: Date.now() }); // Clear Search
+          setHistoryLabel(null); // Clear Label
+          setCurrentMenu(menuId);
+        }}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         onOpenWrite={() => handleOpenWrite('work')}

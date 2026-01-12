@@ -9,18 +9,39 @@ interface HistoryListProps {
     menuId?: string;
     subMenuId?: string; // For filtering by submenu keyword
     initialFilter?: FilterType;
-    initialSearchQuery?: string;
+    initialSearchQuery?: { query: string; timestamp: number };
     initialLabel?: string | null;
 }
 
 type FilterType = 'all' | 'pending' | 'in-progress' | 'completed';
 type LabelFilter = string | null;
 
-export default function HistoryList({ userId, menuId, subMenuId, initialFilter = 'all', initialSearchQuery = '', initialLabel = null }: HistoryListProps) {
+// Helper to highlight text
+const HighlightText = ({ text, highlight }: { text: string; highlight: string }) => {
+    if (!highlight.trim()) {
+        return <>{text}</>;
+    }
+    const regex = new RegExp(`(${highlight})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <span key={i} style={{ backgroundColor: 'yellow', color: 'black' }}>{part}</span>
+                ) : (
+                    part
+                )
+            )}
+        </>
+    );
+};
+
+export default function HistoryList({ userId, menuId, subMenuId, initialFilter = 'all', initialSearchQuery, initialLabel = null }: HistoryListProps) {
     const [items, setItems] = useState<HistoryItem[]>([]);
     const [filter, setFilter] = useState<FilterType>(initialFilter);
     const [labelFilter, setLabelFilter] = useState<LabelFilter>(initialLabel);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState(initialSearchQuery?.query || '');
 
     useEffect(() => {
         if (initialFilter) setFilter(initialFilter);
@@ -31,11 +52,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
     }, [initialLabel]);
 
     useEffect(() => {
-        if (initialSearchQuery !== undefined) setSearchTerm(initialSearchQuery);
-    }, [initialSearchQuery]);
+        if (initialSearchQuery) setSearchTerm(initialSearchQuery.query);
+    }, [initialSearchQuery]); // Relies on object identity change (timestamp)
 
-    // New States
-    const [searchTerm, setSearchTerm] = useState(initialSearchQuery);
+
+
     const [hideCompleted, setHideCompleted] = useState(false); // Hide completed in 'All' view
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // Sort Order
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -249,15 +270,52 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         }
     };
 
-    const formatDate = (timestamp: any) => {
-        if (!timestamp) return '';
-        const date = new Date(timestamp);
-        return date.toLocaleDateString('ko-KR', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+    const formatDate = (timestamp: any, fallbackId?: string) => {
+        let date: Date | null = null;
+
+        try {
+            // 1. Try generic timestamp
+            if (timestamp) {
+                if (timestamp instanceof Date) {
+                    date = timestamp;
+                } else if (typeof timestamp === 'object' && (timestamp.seconds !== undefined || timestamp._seconds !== undefined)) {
+                    const seconds = timestamp.seconds ?? timestamp._seconds;
+                    date = new Date(Number(seconds) * 1000);
+                } else {
+                    date = new Date(timestamp);
+                }
+            }
+
+            // 2. Validate extracted date
+            if (date && isNaN(date.getTime())) {
+                date = null;
+            }
+
+            // 3. Fallback to ObjectId if date is invalid/missing
+            if (!date && fallbackId && /^[0-9a-fA-F]{24}$/.test(fallbackId)) {
+                const timestampHex = fallbackId.substring(0, 8);
+                const seconds = parseInt(timestampHex, 16);
+                date = new Date(seconds * 1000);
+            }
+
+            if (!date || isNaN(date.getTime())) return extractedDateDisplay(fallbackId);
+
+            return date.toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        } catch (e) {
+            console.error("Date formatting failed", e);
+            return '';
+        }
+    };
+
+    const extractedDateDisplay = (id?: string) => {
+        // Last resort for non-ObjectId strings to avoid completely blank lines if desired, or just ''
+        return '';
     };
 
     // Helper: Check for "Long Pending" (e.g., > 3 days and not completed)
@@ -309,9 +367,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         // Search Filter
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            const matchesSearch = item.content.toLowerCase().includes(term) ||
-                (item.summary && item.summary.toLowerCase().includes(term));
-            if (!matchesSearch) return false;
+            const matchesContent = item.content.toLowerCase().includes(term);
+            const matchesSummary = item.summary && item.summary.toLowerCase().includes(term);
+            const matchesComments = item.comments && item.comments.some(c => c.content.toLowerCase().includes(term));
+
+            if (!matchesContent && !matchesSummary && !matchesComments) return false;
         }
 
         // Hide Completed Filter (Only active when filter is 'all')
@@ -381,6 +441,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                    <span className={styles.searchCount}>
+                        {filteredItems.length}건
+                    </span>
+                )}
             </div>
 
             {/* Filters */}
@@ -485,7 +550,12 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                     {item.priority === 'high' && (
                                         <span style={{ fontSize: '0.8rem', color: '#ff4444', fontWeight: 'bold' }}>🔥 긴급</span>
                                     )}
-                                    <span className={styles.date}>{formatDate(item.createdAt)}</span>
+                                    <span className={styles.date}>{formatDate(item.createdAt, item._id)}</span>
+                                    {item.status === 'completed' && item.completedAt && (
+                                        <span className={styles.date} style={{ color: '#4db6ac', marginLeft: '5px' }}>
+                                            (완료: {formatDate(item.completedAt)})
+                                        </span>
+                                    )}
                                 </div>
                                 <div className={styles.actionGroup}>
                                     {/* Priority Toggle Button */}
@@ -565,14 +635,23 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                     // View Mode
                                     item.summary ? (
                                         <>
-                                            <p className={styles.summary}>{item.summary}</p>
-                                            <details className={styles.details}>
-                                                <summary>원본 내용 보기</summary>
-                                                <p className={styles.originalContent}>{item.content}</p>
+                                            <p className={styles.summary}>
+                                                <HighlightText text={item.summary} highlight={searchTerm} />
+                                            </p>
+                                            <details
+                                                className={styles.details}
+                                                open={searchTerm && item.content.toLowerCase().includes(searchTerm.toLowerCase()) ? true : undefined}
+                                            >
+                                                <summary>원본 내용 보기 {searchTerm && item.content.toLowerCase().includes(searchTerm.toLowerCase()) && !item.summary.toLowerCase().includes(searchTerm.toLowerCase()) && <span style={{ color: 'red', fontSize: '0.8em' }}>(검색어 포함)</span>}</summary>
+                                                <p className={styles.originalContent}>
+                                                    <HighlightText text={item.content} highlight={searchTerm} />
+                                                </p>
                                             </details>
                                         </>
                                     ) : (
-                                        <p className={styles.content}>{item.content}</p>
+                                        <p className={styles.content}>
+                                            <HighlightText text={item.content} highlight={searchTerm} />
+                                        </p>
                                     )
                                 )}
                             </div>
@@ -607,17 +686,21 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                         e.stopPropagation();
                                         setExpandedComments(prev => ({ ...prev, [item.id!]: !prev[item.id!] }));
                                     }}
+                                    style={searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())) ? { color: '#ff4444', fontWeight: 'bold' } : {}}
                                 >
                                     💬 댓글 {item.comments?.length || 0}
+                                    {searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())) && <span style={{ fontSize: '0.8em' }}> (검색됨)</span>}
                                 </button>
 
-                                {expandedComments[item.id!] && (
+                                {(expandedComments[item.id!] || (searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())))) && (
                                     <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
                                         {/* Comment List */}
                                         <div className={styles.commentList}>
                                             {item.comments && item.comments.length > 0 ? (
                                                 item.comments.map(comment => (
-                                                    <div key={comment.id} className={styles.commentItem}>
+                                                    <div key={comment.id} className={styles.commentItem}
+                                                        style={searchTerm && comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ? { backgroundColor: 'rgba(255, 255, 0, 0.1)' } : {}}
+                                                    >
                                                         <div className={styles.commentHeader}>
                                                             <span className={styles.commentUser}>사용자</span>
                                                             <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
@@ -635,6 +718,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                                                 >🗑️</button>
                                                             </div>
                                                         </div>
+                                                        {editingCommentId !== comment.id && (
+                                                            <div className={styles.commentBody}>
+                                                                <HighlightText text={comment.content} highlight={searchTerm} />
+                                                            </div>
+                                                        )}
                                                         {editingCommentId === comment.id ? (
                                                             <div className={styles.commentEditBox}>
                                                                 <input
@@ -653,9 +741,7 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                                                 <button onClick={() => handleEditComment(item.id!, comment.id)}>저장</button>
                                                                 <button onClick={() => setEditingCommentId(null)}>취소</button>
                                                             </div>
-                                                        ) : (
-                                                            <div className={styles.commentContent}>{comment.content}</div>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 ))
                                             ) : (

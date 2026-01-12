@@ -20,6 +20,7 @@ export async function GET() {
         }));
 
         return NextResponse.json({
+            databaseName: db.databaseName, // Show current DB name
             currentUser: {
                 id: currentUserId,
                 email: session?.user?.email

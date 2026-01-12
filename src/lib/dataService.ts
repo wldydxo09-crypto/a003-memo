@@ -33,6 +33,7 @@ export interface HistoryItem {
     comments?: Comment[]; // Added comments field
     createdAt?: string | Date; // API returns string, we might need Date
     updatedAt?: string | Date;
+    completedAt?: string | Date;
 }
 
 export interface FeatureItem {
@@ -113,7 +114,13 @@ export const toggleHistoryStatus = async (id: string, currentStatus: string): Pr
         'completed': 'pending'
     };
     const nextStatus = statusFlow[currentStatus] || 'pending';
-    await updateHistoryItem(id, { status: nextStatus });
+
+    const updates: Partial<HistoryItem> = { status: nextStatus };
+    if (nextStatus === 'completed') {
+        updates.completedAt = new Date();
+    }
+
+    await updateHistoryItem(id, updates);
 };
 
 // 6. Toggle Priority
@@ -189,14 +196,22 @@ export const addComment = async (historyId: string, content: string, userId: str
     return newComment;
 };
 
-export const editComment = async (historyId: string, commentId: string, content: string) => {
-    // Need to fetch full item to update comments array?
-    // Ideally backend has specialized route.
-    // For now we assume typical user flow just works.
+export const editComment = async (historyId: string, commentId: string, content: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/history/${historyId}/comments`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId, content })
+    });
+
+    if (!res.ok) throw new Error('Failed to update comment');
 };
 
-export const deleteComment = async (historyId: string, commentId: string) => {
-    // ...
+export const deleteComment = async (historyId: string, commentId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/history/${historyId}/comments?commentId=${commentId}`, {
+        method: 'DELETE'
+    });
+
+    if (!res.ok) throw new Error('Failed to delete comment');
 };
 
 
