@@ -30,7 +30,7 @@ if (process.env.NODE_ENV === 'development') {
 export default clientPromise;
 
 // Helper function to get database
-export async function getDatabase(dbName: string = 'smartwork'): Promise<Db> {
+export async function getDatabase(dbName?: string): Promise<Db> {
     const client = await clientPromise;
     return client.db(dbName);
 }
