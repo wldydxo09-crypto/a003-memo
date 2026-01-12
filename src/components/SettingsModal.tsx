@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './SettingsModal.module.css';
 import { MENUS } from '@/lib/menus';
-import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService';
+// import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -18,23 +18,34 @@ export default function SettingsModal({ isOpen, onClose, userId }: SettingsModal
 
     useEffect(() => {
         if (isOpen && userId) {
-            const unsubscribe = subscribeToUserSettings(userId, (settings) => {
-                setSubMenus(settings);
-                // Sync to localStorage for WriteModal to use
-                localStorage.setItem('smartWork_subMenus', JSON.stringify(settings));
-            });
-            return () => unsubscribe();
+            const loadSettings = async () => {
+                try {
+                    const response = await fetch('/api/settings');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setSubMenus(data);
+                        localStorage.setItem('smartWork_subMenus', JSON.stringify(data));
+                    }
+                } catch (error) {
+                    console.error('Failed to load settings:', error);
+                }
+            };
+            loadSettings();
         }
     }, [isOpen, userId]);
 
     const saveSettings = async (newSettings: { [key: string]: string[] }) => {
         // Optimistic update
         setSubMenus(newSettings);
-        // Sync to localStorage for WriteModal to use
         localStorage.setItem('smartWork_subMenus', JSON.stringify(newSettings));
-        // Save to Firestore
+
         try {
-            await saveUserSettings(userId, newSettings);
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subMenus: newSettings })
+            });
+            if (!response.ok) throw new Error('Failed to save');
         } catch (e) {
             console.error("Failed to save settings:", e);
             alert("설정 저장 실패");

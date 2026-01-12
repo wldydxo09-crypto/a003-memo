@@ -1,43 +1,22 @@
 'use client';
 
-import { signInWithPopup, signOut, User } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+import { signIn } from 'next-auth/react';
 import styles from './Login.module.css';
 
-interface LoginProps {
-    user: User | null;
-    loading: boolean;
-}
 
-export default function Login({ user, loading }: LoginProps) {
+
+export default function Login() {
     const handleGoogleLogin = async () => {
         try {
-            await signInWithPopup(auth, googleProvider);
+            await signIn('google');
         } catch (error) {
             console.error('Login error:', error);
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
-    };
 
-    if (loading) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.loadingSpinner}></div>
-                <p className={styles.loadingText}>로딩 중...</p>
-            </div>
-        );
-    }
 
-    if (user) {
-        return null; // Show main app
-    }
+
 
     return (
         <div className={styles.container}>

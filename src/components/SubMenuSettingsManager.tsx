@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService';
+// import { saveUserSettings, subscribeToUserSettings } from '@/lib/firebaseService'; // Removed for MongoDB migration
 
 interface SubMenuSettingsManagerProps {
     workMenus: { id: string; name: string; icon: string }[];
@@ -14,21 +14,28 @@ export default function SubMenuSettingsManager({ workMenus, userId }: SubMenuSet
     const [newTag, setNewTag] = useState('');
 
     useEffect(() => {
-        // Subscribe to Firestore settings
-        const unsubscribe = subscribeToUserSettings(userId, (settings) => {
-            if (Object.keys(settings).length > 0) {
-                setSubMenus(settings);
-            } else {
-                // Defaults if no settings exist yet
-                setSubMenus({
-                    'work': ['회의', '개발', '기획', '미팅'],
-                    'dev': ['프론트엔드', '백엔드', '배포', '에러'],
-                    'issue': ['버그', '긴급', '수정'],
-                    'idea': ['기능', '디자인']
-                });
+        const loadSettings = async () => {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Object.keys(data).length > 0) {
+                        setSubMenus(data);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
             }
-        });
-        return () => unsubscribe();
+            // Defaults
+            setSubMenus({
+                'work': ['회의', '개발', '기획', '미팅'],
+                'dev': ['프론트엔드', '백엔드', '배포', '에러'],
+                'issue': ['버그', '긴급', '수정'],
+                'idea': ['기능', '디자인']
+            });
+        };
+        loadSettings();
     }, [userId]);
 
     // Ensure selectedMenu is valid when workMenus changes
@@ -41,9 +48,14 @@ export default function SubMenuSettingsManager({ workMenus, userId }: SubMenuSet
     const saveSubMenus = async (newSubMenus: Record<string, string[]>) => {
         // Optimistic update
         setSubMenus(newSubMenus);
-        // Save to Firestore
+        // Save to API
         try {
-            await saveUserSettings(userId, newSubMenus);
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subMenus: newSubMenus })
+            });
+            if (!response.ok) throw new Error('Failed to save');
         } catch (e) {
             console.error("Failed to save settings:", e);
             alert("설정 저장 실패");

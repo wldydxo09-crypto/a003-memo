@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/legacy/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { subscribeToHistory, subscribeToFeatures, subscribeToUserSettings } from '@/lib/firebaseService';
+import { subscribeToHistory, subscribeToFeatures, subscribeToUserSettings } from '@/lib/legacy/firebaseService';
 
 export default function MigrationPage() {
     const [user, setUser] = useState<User | null>(null);

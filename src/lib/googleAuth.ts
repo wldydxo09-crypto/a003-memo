@@ -21,15 +21,18 @@ const getBaseUrl = () => {
 const BASE_URL = getBaseUrl();
 const REDIRECT_URI = `${BASE_URL}/api/auth/callback/google`;
 
-export function getOAuthClient() {
+export function getOAuthClient(baseUrl?: string) {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         return null;
     }
 
+    const currentBaseUrl = baseUrl || BASE_URL;
+    const redirectUri = `${currentBaseUrl}/api/auth/callback/google`;
+
     return new google.auth.OAuth2(
         GOOGLE_CLIENT_ID,
         GOOGLE_CLIENT_SECRET,
-        REDIRECT_URI
+        redirectUri
     );
 }
 

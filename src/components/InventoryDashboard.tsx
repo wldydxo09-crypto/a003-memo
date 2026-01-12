@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useModalBack } from '@/hooks/useModalBack';
-import { subscribeToFeatures, addFeature, updateFeature, deleteFeature, FeatureItem } from '@/lib/firebaseService';
+
+import { fetchFeatures, addFeature, updateFeature, deleteFeature, FeatureItem } from '@/lib/dataService';
 import styles from './InventoryDashboard.module.css';
 import MermaidRenderer from './MermaidRenderer';
 
@@ -50,11 +51,17 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
 
     // Initial Load
     useEffect(() => {
-        const unsubscribe = subscribeToFeatures(userId, (items) => {
-            setFeatures(items);
-            setLoading(false);
-        });
-        return () => unsubscribe();
+        const loadFeatures = async () => {
+            try {
+                const items = await fetchFeatures(userId);
+                setFeatures(items);
+            } catch (e) {
+                console.error("Failed to load features", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadFeatures();
     }, [userId]);
 
     const handleOpenModal = (feature?: FeatureItem) => {

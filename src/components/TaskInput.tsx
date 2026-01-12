@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { addHistoryItem, uploadImages } from '@/lib/firebaseService';
+import { addHistoryItem, uploadImages } from '@/lib/dataService';
 import styles from './TaskInput.module.css';
 
 interface TaskInputProps {

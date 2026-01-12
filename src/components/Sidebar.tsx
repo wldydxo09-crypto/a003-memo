@@ -1,8 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User } from 'firebase/auth';
 import styles from './Sidebar.module.css';
+
+// Generic User Interface compatible with NextAuth
+interface User {
+    uid: string;
+    email?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+}
 
 interface SidebarProps {
     currentMenu: string;
@@ -18,7 +25,7 @@ interface SidebarProps {
     onTagSelect: (tag: string) => void;
 }
 
-import { subscribeToUserSettings } from '@/lib/firebaseService';
+// import { subscribeToUserSettings } from '@/lib/firebaseService'; // Removed for MongoDB migration
 
 export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsCollapsed, onOpenWrite, user, isMobileOpen, onCloseMobile, workMenus, onSearch, onTagSelect }: SidebarProps) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -26,19 +33,31 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
 
     useEffect(() => {
         if (!user) return;
-        const unsubscribe = subscribeToUserSettings(user.uid, (settings) => {
-            if (settings && Object.keys(settings).length > 0) {
-                setSubMenus(settings);
-            } else {
-                setSubMenus({
-                    'work': ['회의', '개발', '기획', '미팅'],
-                    'dev': ['프론트엔드', '백엔드', '배포', '에러'],
-                    'issue': ['버그', '긴급', '수정'],
-                    'idea': ['기능', '디자인']
-                });
+
+        const loadSettings = async () => {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Object.keys(data).length > 0) {
+                        setSubMenus(data);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
             }
-        });
-        return () => unsubscribe();
+
+            // Defaults
+            setSubMenus({
+                'work': ['회의', '개발', '기획', '미팅'],
+                'dev': ['프론트엔드', '백엔드', '배포', '에러'],
+                'issue': ['버그', '긴급', '수정'],
+                'idea': ['기능', '디자인']
+            });
+        };
+
+        loadSettings();
     }, [user]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
@@ -119,8 +138,17 @@ export default function Sidebar({ currentMenu, onMenuChange, isCollapsed, setIsC
                 {/* Global Write Button */}
                 <div className={styles.writeSection}>
                     <button
+                        type="button"
                         className={styles.writeBtn}
-                        onClick={() => { onOpenWrite(); if (onCloseMobile) onCloseMobile(); }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (onCloseMobile) onCloseMobile();
+                            // Delay opening write modal to allow sidebar history cleanup to finish.
+                            // 300ms is a safe buffer for browser history transitions.
+                            setTimeout(() => {
+                                onOpenWrite();
+                            }, 300);
+                        }}
                         title="새 기록 작성"
                     >
                         <span className={styles.writeIcon}>✏️</span>

@@ -2,7 +2,7 @@
 // Replace with your Firebase project config from Firebase Console
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // TODO: Replace with your Firebase config
@@ -28,7 +28,10 @@ if (!getApps().length) {
 }
 
 auth = getAuth(app);
-db = getFirestore(app);
+auth = getAuth(app);
+// db = getFirestore(app);
+// Force long polling to avoid QUIC errors (net::ERR_QUIC_PROTOCOL_ERROR)
+db = initializeFirestore(app, { experimentalForceLongPolling: true });
 storage = getStorage(app);
 
 // Google Auth Provider

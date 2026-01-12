@@ -35,6 +35,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
     const [showTemplates, setShowTemplates] = useState(false);
     const [templates, setTemplates] = useState<{ id: string, name: string, content: string }[]>([]);
 
+
     useEffect(() => {
         const saved = localStorage.getItem('my_templates');
         if (saved) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useModalBack } from '@/hooks/useModalBack';
-import { subscribeToUserSettings } from '@/lib/firebaseService';
+
 import { fetchHistory } from '@/lib/dataService';
 import { useRouter } from 'next/navigation';
 import styles from './Dashboard.module.css';
@@ -130,8 +130,11 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     };
 
     // Filtered History
+    const [statsLoading, setStatsLoading] = useState(true);
+
     useEffect(() => {
         const loadStats = async () => {
+            setStatsLoading(true);
             try {
                 const items = await fetchHistory(userId); // Fetch all for stats
                 const counts = {
@@ -143,6 +146,8 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                 setStats(counts);
             } catch (e) {
                 console.error("Failed to load stats", e);
+            } finally {
+                setStatsLoading(false);
             }
         };
         loadStats();
@@ -150,11 +155,21 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
 
     // Sync subMenus to localStorage for WriteModal auto-classification
     useEffect(() => {
-        const unsubscribe = subscribeToUserSettings(userId, (settings) => {
-            localStorage.setItem('smartWork_subMenus', JSON.stringify(settings));
-            console.log('SubMenus synced to localStorage:', Object.keys(settings));
-        });
-        return () => unsubscribe();
+        const loadSettings = async () => {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    if (settings && Object.keys(settings).length > 0) {
+                        localStorage.setItem('smartWork_subMenus', JSON.stringify(settings));
+                        console.log('SubMenus synced to localStorage:', Object.keys(settings));
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to sync settings", e);
+            }
+        };
+        loadSettings();
     }, [userId]);
 
     // Fetch Calendar
@@ -292,7 +307,13 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         });
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} style={{ position: 'relative' }}>
+            {statsLoading && (
+                <div className={styles.loadingOverlay}>
+                    <div className={styles.spinner}></div>
+                    <div style={{ marginTop: '15px', color: '#fff', fontSize: '1.1rem' }}>데이터 불러오는 중...</div>
+                </div>
+            )}
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} userId={userId} />
 

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getOAuthClient } from '@/lib/googleAuth';
-import { cookies } from 'next/headers';
+import { auth } from '@/auth';
 
 export async function POST(request: NextRequest) {
     try {
         const { summary, description, startDateTime, endDateTime, location } = await request.json();
 
-        // 1. Get Token from Cookie
-        const cookieStore = await cookies();
-        const accessToken = cookieStore.get('google_access_token')?.value;
-        const refreshToken = cookieStore.get('google_refresh_token')?.value;
+        // 1. Get Token from Session
+        const session = await auth();
+        const accessToken = session?.accessToken;
+        const refreshToken = session?.refreshToken;
 
         if (!accessToken && !refreshToken) {
             return NextResponse.json(
@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
         // We'll require timeMax or default to +1 month.
         const timeMax = searchParams.get('timeMax');
 
-        // 1. Get Token from Cookie
-        const cookieStore = await cookies();
-        const accessToken = cookieStore.get('google_access_token')?.value;
-        const refreshToken = cookieStore.get('google_refresh_token')?.value;
+        // 1. Get Token from Session
+        const session = await auth();
+        const accessToken = session?.accessToken;
+        const refreshToken = session?.refreshToken;
 
         if (!accessToken && !refreshToken) {
             return NextResponse.json(
@@ -137,10 +137,10 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        // 1. Get Token from Cookie
-        const cookieStore = await cookies();
-        const accessToken = cookieStore.get('google_access_token')?.value;
-        const refreshToken = cookieStore.get('google_refresh_token')?.value;
+        // 1. Get Token from Session
+        const session = await auth();
+        const accessToken = session?.accessToken;
+        const refreshToken = session?.refreshToken;
 
         if (!accessToken && !refreshToken) {
             return NextResponse.json(

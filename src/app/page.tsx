@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import Login from '@/components/Login';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
@@ -13,10 +13,41 @@ import SubMenuSettingsManager from '@/components/SubMenuSettingsManager';
 import styles from './page.module.css';
 import { useModalBack } from '@/hooks/useModalBack';
 
+// Mock User type to compat with existing components
+// We can gradually replace this with NextAuth's User type
+type UserCompat = {
+  uid: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+};
+
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentMenu, setCurrentMenu] = useState('dashboard');
+  return (
+    <Suspense fallback={<div className={styles.loading}>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+
+  // Backwards compatibility for User object (mapping id -> uid)
+  const user = session?.user ? {
+    ...session.user,
+    uid: session.user.id,
+    photoURL: session.user.image,
+    displayName: session.user.name
+  } : null;
+
+  const loading = status === 'loading';
+
+  // Use searchParams for current menu, default to 'dashboard'
+  const currentMenu = searchParams.get('menu') || 'dashboard';
+
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Write Modal State
@@ -43,6 +74,14 @@ export default function Home() {
   // Load Menus from LocalStorage
   useEffect(() => {
     const saved = localStorage.getItem('my_work_menus');
+    // Handle Logout
+    const handleLogout = async () => {
+      try {
+        await signOut(); // NextAuth signOut
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    };
     if (saved) {
       try {
         setWorkMenus(JSON.parse(saved));
@@ -65,45 +104,20 @@ export default function Home() {
   useModalBack(isMobileOpen, () => setIsMobileOpen(false));
 
   // --- Advanced Back Button & History Management ---
-  useEffect(() => {
-    // 1. Initialize History State on Load
-    // We replace the current state to ensure it has our shape
-    window.history.replaceState({ menu: 'dashboard', place: 'home' }, '', window.location.pathname);
-
-    // 2. Handle Popstate (Back Button)
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      console.log('PopState:', state);
-
-      // logic: If we have a menu in state, restore it.
-      if (state && state.menu) {
-        // Just update state, don't push
-        setCurrentMenu(state.menu);
-      } else {
-        // Fallback to dashboard if state is null (e.g. external link back)
-        if (currentMenu !== 'dashboard') {
-          setCurrentMenu('dashboard');
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  // Replaced manual history management with Next.js Router
 
   // Wrapper for Menu Change to support History
   // We will pass this to Sidebar instead of setCurrentMenu directly
   const handleMenuChangeWithHistory = (menuId: string) => {
     if (menuId === currentMenu) return;
 
-    // Push new state
-    window.history.pushState({ menu: menuId }, '', `?menu=${menuId}`);
-    setCurrentMenu(menuId);
+    // Use Router Push
+    router.push(`?menu=${menuId}`);
+    // setCurrentMenu(menuId); -> No longer needed, as searchParams will update
   };
 
   // Double Back to Exit Logic
-  // In a browser, we can't easily capture "Exit" attempts. 
-  // However, we can ensure the User is deeper in the stack.
+  // With standard router, browser back button just works.
   // We can't implement "Double Tap to Exit" perfectly in a standard web page 
   // without trapping the user, which is bad practice/hard. 
   // But we can ensure "Back -> Dashboard".
@@ -111,11 +125,7 @@ export default function Home() {
   // We need to update Sidebar's onMenuChange prop
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    // Session is handled by useSession, no manual listener needed
   }, []);
 
   const handleOpenWrite = (menuId: string = 'work') => {
@@ -137,11 +147,11 @@ export default function Home() {
     }
 
     // Use History Push
-    handleMenuChangeWithHistory('history');
+    router.push(`?menu=history`);
   };
 
   if (loading) return <div className={styles.loading}>Loading...</div>;
-  if (!user) return <Login user={user} loading={loading} />;
+  if (!user) return <Login />;
 
   // ... (getMenuTitle remains same) ...
 
@@ -423,7 +433,7 @@ export default function Home() {
                       </div>
                     </div>
                     <button
-                      onClick={() => signOut(auth)}
+                      onClick={() => signOut()}
                       style={{ width: '100%', padding: '10px', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
                       onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'}
                       onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
