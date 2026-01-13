@@ -54,6 +54,7 @@ function HomeContent() {
   // Write Modal State
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [writeInitialMenu, setWriteInitialMenu] = useState('work');
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for dashboard refresh
 
   // Handle Back Button for Write Modal
   useModalBack(isWriteModalOpen, () => setIsWriteModalOpen(false));
@@ -227,6 +228,7 @@ function HomeContent() {
               userId={user.uid}
               onOpenWrite={handleOpenWrite}
               onNavigateToHistory={handleNavigateToHistory}
+              refreshTrigger={refreshTrigger}
             />
           ) : currentMenu === 'inventory' ? (
             <InventoryDashboard userId={user.uid} />
@@ -438,6 +440,7 @@ function HomeContent() {
         }
         userId={user.uid}
         initialMenuId={writeInitialMenu}
+        onSuccess={() => setRefreshTrigger(prev => prev + 1)}
       />
     </div >
   );

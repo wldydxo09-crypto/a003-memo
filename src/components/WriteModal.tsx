@@ -8,9 +8,10 @@ interface WriteModalProps {
     onClose: () => void;
     userId: string;
     initialMenuId?: string;
+    onSuccess?: () => void;
 }
 
-export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'work' }: WriteModalProps) {
+export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'work', onSuccess }: WriteModalProps) {
     const [menuId, setMenuId] = useState(initialMenuId);
     const [content, setContent] = useState('');
     const [summary, setSummary] = useState('');
@@ -280,16 +281,37 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                         throw new Error('날짜를 선택해주세요.');
                     }
 
+                    // Smart Title Logic: AI Title -> Summary Input -> First line of Content -> Default
+                    let finalTitle = aiSchedule?.title || summary;
+                    if (!finalTitle && content.trim()) {
+                        finalTitle = content.split('\n')[0].substring(0, 30); // Take first line, max 30 chars
+                    }
+                    if (!finalTitle) finalTitle = '새로운 일정';
+
+                    let eventBody: any = {
+                        summary: finalTitle,
+                        description: `[메모] ${content}`,
+                        location: aiSchedule?.location || null
+                    };
+
+                    if (isAllDay) {
+                        // Google Calendar API requires end date to be exclusive (+1 day)
+                        // Since UI hides end date for All Day events, assume 1-day duration based on Start Date
+                        const endDateObj = new Date(manualDate.startDate);
+                        endDateObj.setDate(endDateObj.getDate() + 1);
+                        const adjustedEndDate = endDateObj.toISOString().split('T')[0];
+
+                        eventBody.start = { date: manualDate.startDate };
+                        eventBody.end = { date: adjustedEndDate };
+                    } else {
+                        eventBody.startDateTime = startDateTime;
+                        eventBody.endDateTime = endDateTime;
+                    }
+
                     const calRes = await fetch('/api/calendar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            summary: aiSchedule?.title || summary || '새로운 일정',
-                            description: `[메모] ${content}`,
-                            startDateTime: startDateTime,
-                            endDateTime: endDateTime,
-                            location: aiSchedule?.location || null
-                        })
+                        body: JSON.stringify(eventBody)
                     });
 
                     const calData = await calRes.json();
@@ -384,12 +406,19 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                 subMenuId: detectedSubMenu,
             });
 
-            onClose();
             // Reset fields
             setContent('');
             setImages([]);
             setSummary('');
             setSelectedLabels([]);
+
+            alert('기록이 저장되었습니다.'); // Explicit confirmation
+
+            setTimeout(() => {
+                if (onSuccess) onSuccess(); // Trigger refresh in parent after delay
+            }, 500);
+
+            onClose();
         } catch (error: any) {
             console.error('Registration failed:', error);
             alert(`등록 실패: ${error.message}`);
@@ -538,7 +567,18 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                                         <input
                                             type="time"
                                             value={manualDate.startTime}
-                                            onChange={(e) => setManualDate({ ...manualDate, startTime: e.target.value })}
+                                            onChange={(e) => {
+                                                const newStart = e.target.value;
+                                                const [h, m] = newStart.split(':').map(Number);
+                                                const newEndH = (h + 1) % 24;
+                                                const newEnd = `${newEndH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+
+                                                setManualDate({
+                                                    ...manualDate,
+                                                    startTime: newStart,
+                                                    endTime: newEnd
+                                                });
+                                            }}
                                             className={styles.summaryInput}
                                             style={{ marginTop: '4px' }}
                                         />

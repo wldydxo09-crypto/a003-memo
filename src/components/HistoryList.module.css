@@ -8,17 +8,21 @@
 .filters {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--spacing-md);
+    justify-content: flex-start;
+    /* Changed from space-between to keep them together */
+    align-items: flex-start;
+    /* Align to top so labels align with the first row of status buttons */
+    gap: var(--spacing-lg);
+    /* Increased gap slightly for separation */
 }
 
 .statusFilters {
     display: flex;
     gap: var(--spacing-xs);
-    background: var(--bg-glass);
-    padding: var(--spacing-xs);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
+    /* Removed background/border for cleaner look */
+    background: transparent;
+    padding: 0;
+    border: none;
 }
 
 .filterBtn {
@@ -32,6 +36,8 @@
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
+    white-space: nowrap;
+    /* Prevent text from breaking into multiple lines */
 }
 
 .filterBtn:hover {
@@ -391,18 +397,22 @@
 
     .statusFilters {
         width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
+        /* Changed from center to flex-start for better flow */
+        flex-wrap: wrap;
+        /* Allow buttons to wrap to next line if needed */
     }
 
     .labelFilters {
-        justify-content: center;
+        justify-content: flex-start;
+        /* Changed from center to flex-start */
     }
 }
 
 /* Search */
 .searchContainer {
     width: 100%;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 5px;
 }
 
 .searchInput {

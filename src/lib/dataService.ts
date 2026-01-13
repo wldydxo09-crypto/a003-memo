@@ -64,7 +64,10 @@ export const fetchHistory = async (userId: string, filters: any = {}): Promise<H
     if (filters.subMenuId) params.append('subMenuId', filters.subMenuId);
     if (filters.search) params.append('search', filters.search);
 
-    const res = await fetch(`${API_BASE}/history?${params.toString()}`);
+    // Force cache buster
+    params.append('_t', Date.now().toString());
+
+    const res = await fetch(`${API_BASE}/history?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch history');
 
     const data = await res.json();

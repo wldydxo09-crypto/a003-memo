@@ -72,8 +72,9 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         const loadItems = async () => {
             setLoading(true);
             try {
+                // Fetch ALL items for this context (ignore status filter in API) to calculate counts
                 const fetchedItems = await fetchHistory(userId, {
-                    status: filter === 'all' ? undefined : filter,
+                    // status: filter === 'all' ? undefined : filter, // Removed to fetch all
                     menuId: menuId,
                     label: labelFilter || undefined,
                     subMenuId: subMenuId,
@@ -87,7 +88,7 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         };
 
         loadItems();
-    }, [userId, menuId, subMenuId, filter, labelFilter]);
+    }, [userId, menuId, subMenuId, labelFilter]); // Removed 'filter' dependency to avoid refetching on tab switch
 
     const handleStatusChange = async (item: HistoryItem, newStatus: 'pending' | 'in-progress' | 'completed') => {
         if (!item.id || item.status === newStatus) return;
@@ -97,24 +98,19 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
             updates.completedAt = new Date();
         }
 
-        // Optimistic Update
-        setItems(prev => {
-            // If we are filtering by status, and the new status doesn't match, remove it
-            if (filter !== 'all' && filter !== newStatus) {
-                return prev.filter(i => i.id !== item.id);
-            }
-            // Otherwise just update the status
-            return prev.map(i => i.id === item.id ? { ...i, ...updates } : i);
-        });
+        // Optimistic Update: Update status in place (don't remove from list, let client filter handle it)
+        setItems(prev => prev.map(i => i.id === item.id ? { ...i, ...updates } : i));
 
         try {
             await updateHistoryItem(item.id, updates);
         } catch (error) {
             console.error('Status update error:', error);
             alert('상태 변경에 실패했습니다.');
-            // Revert state logic could go here, but omitted for brevity
+            // Revert state logic could go here
         }
     };
+
+    // ... (handlePriorityToggle, handleDelete, etc. remain same) ...
 
     const handlePriorityToggle = async (item: HistoryItem) => {
         if (!item.id) return;
@@ -147,7 +143,6 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         } catch (error) {
             console.error('Delete error:', error);
             alert('삭제에 실패했습니다.');
-            // Ideally, revert state here if needed, but fetch will likely restore it on next snapshot if failed
         }
     };
 
@@ -367,8 +362,19 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         { id: 'general', name: '일반' },
     ];
 
+    // Stats Calculation
+    const counts = {
+        all: items.length,
+        pending: items.filter(i => i.status === 'pending').length,
+        inProgress: items.filter(i => i.status === 'in-progress').length,
+        completed: items.filter(i => i.status === 'completed').length,
+    };
+
     // Filter Logic
     const filteredItems = items.filter(item => {
+        // Status Filter (Client-side)
+        if (filter !== 'all' && item.status !== filter) return false;
+
         // Search Filter
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -453,60 +459,38 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                {searchTerm && (
-                    <span className={styles.searchCount}>
-                        {filteredItems.length}건
-                    </span>
-                )}
             </div>
 
-            {/* Filters */}
-            <div className={styles.filters}>
+            {/* Filters - Column Layout with consistent spacing */}
+            <div className={styles.filters} style={{ flexDirection: 'column', gap: '5px', marginBottom: '5px' }}>
+                {/* Row 1: Status Filters + Sort */}
                 <div className={styles.statusFilters}>
                     <button
                         className={`${styles.filterBtn} ${filter === 'all' ? styles.active : ''}`}
                         onClick={() => setFilter('all')}
                     >
-                        전체
+                        전체 ({counts.all})
                     </button>
-                    {filter === 'all' && (
-                        <label style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-secondary)',
-                            marginLeft: '8px',
-                            cursor: 'pointer'
-                        }}>
-                            <input
-                                type="checkbox"
-                                checked={hideCompleted}
-                                onChange={(e) => setHideCompleted(e.target.checked)}
-                            />
-                            완료 숨기기
-                        </label>
-                    )}
                     <button
                         className={`${styles.filterBtn} ${filter === 'pending' ? styles.active : ''}`}
                         onClick={() => setFilter('pending')}
                     >
-                        미완료
+                        미완료 ({counts.pending})
                     </button>
                     <button
                         className={`${styles.filterBtn} ${filter === 'completed' ? styles.active : ''}`}
                         onClick={() => setFilter('completed')}
                     >
-                        완료
+                        완료 ({counts.completed})
                     </button>
                     <button
                         className={`${styles.filterBtn} ${filter === 'in-progress' ? styles.active : ''}`}
                         onClick={() => setFilter('in-progress')}
                     >
-                        진행중
+                        진행중 ({counts.inProgress})
                     </button>
 
-                    {/* Sort Toggle Button - Styled like filters but distinct */}
+                    {/* Sort Toggle Button */}
                     <button
                         onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
                         className={styles.filterBtn}
@@ -516,17 +500,38 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                     </button>
                 </div>
 
-                <div className={styles.labelFilters}>
-                    {labelOptions.map((label) => (
-                        <button
-                            key={label.id}
-                            className={`${styles.labelFilterBtn} ${styles[getLabelColor(label.id)]} ${labelFilter === label.id ? styles.active : ''
-                                }`}
-                            onClick={() => setLabelFilter(labelFilter === label.id ? null : label.id)}
-                        >
-                            {label.name}
-                        </button>
-                    ))}
+                {/* Row 2: Checkbox + Label Filters */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    {filter === 'all' && (
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={hideCompleted}
+                                onChange={(e) => setHideCompleted(e.target.checked)}
+                            />
+                            완료 숨기기
+                        </label>
+                    )}
+                    <div className={styles.labelFilters}>
+                        {labelOptions.map((label) => (
+                            <button
+                                key={label.id}
+                                className={`${styles.labelFilterBtn} ${styles[getLabelColor(label.id)]} ${labelFilter === label.id ? styles.active : ''
+                                    }`}
+                                onClick={() => setLabelFilter(labelFilter === label.id ? null : label.id)}
+                            >
+                                {label.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

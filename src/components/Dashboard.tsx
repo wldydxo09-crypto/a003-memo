@@ -10,15 +10,14 @@ interface DashboardProps {
     userId: string;
     onOpenWrite: (menuId: string) => void;
     onNavigateToHistory: (filter: 'all' | 'pending' | 'in-progress' | 'completed', searchQuery?: string) => void;
+    refreshTrigger?: number;
 }
-
-
 
 import CalendarWidget, { CalendarEvent } from './CalendarWidget';
 import NewsWidget from './NewsWidget';
 import SettingsModal from './SettingsModal';
 
-export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: DashboardProps) {
+export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, refreshTrigger = 0 }: DashboardProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -63,15 +62,12 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
     const handleDateClick = (date: Date) => {
-        console.log('📅 Date clicked:', date.toISOString(), 'Opening modal...');
+        console.log('📅 Date clicked:', date.toISOString());
         setSelectedDate(date);
         setEventModalDate(date);
-        setIsEventModalOpen(true);
-        setIsEventModalOpen(true);
         setNewEventTitle('');
         setNewEventTime({ start: '09:00', end: '10:00' });
         setIsAllDay(false);
-        console.log('📅 Modal should be open now, isEventModalOpen: true');
     };
 
     const handleCreateEvent = async () => {
@@ -155,7 +151,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
             }
         };
         loadStats();
-    }, [userId]);
+    }, [userId, refreshTrigger]);
 
     // Sync subMenus to localStorage for WriteModal auto-classification
     useEffect(() => {
@@ -205,13 +201,15 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                 const start = new Date(viewBase.setDate(1)); // 1st of VIEWED month
                 start.setHours(0, 0, 0, 0);
                 timeMin = start.toISOString();
+
                 const end = new Date(viewBase);
                 end.setMonth(end.getMonth() + 1);
-                end.setDate(0); // Last day
+                end.setDate(1); // 1st of NEXT month
+                end.setHours(0, 0, 0, 0);
                 timeMax = end.toISOString();
             }
 
-            const res = await fetch(`/api/calendar?timeMin=${timeMin}${timeMax ? `&timeMax=${timeMax}` : ''}`);
+            const res = await fetch(`/api/calendar?timeMin=${timeMin}${timeMax ? `&timeMax=${timeMax}` : ''}`, { cache: 'no-store' });
             const data = await res.json();
 
             if (data.success) {
@@ -222,7 +220,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
         } finally {
             setLoadingCalendar(false);
         }
-    }, [calendarTab, calendarViewDate]);
+    }, [calendarTab, calendarViewDate, refreshTrigger]);
 
     useEffect(() => {
         fetchEvents();
@@ -357,6 +355,10 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory }: 
                                 selectedDate={selectedDate}
                                 currentDate={calendarViewDate}
                                 onNavigate={setCalendarViewDate}
+                                onAddEvent={(date) => {
+                                    setEventModalDate(date);
+                                    setIsEventModalOpen(true);
+                                }}
                             />
                         </section>
 
