@@ -1,33 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { auth } from '@/auth';
 
 export async function GET() {
     try {
-        const session = await auth();
-        const currentUserId = session?.user?.id || 'not-logged-in';
-
         const db = await getDatabase();
-        const historyCollection = db.collection('history');
 
-        // distinct userIds
-        const userIds = await historyCollection.distinct('userId');
-
-        // count per user
-        const stats = await Promise.all(userIds.map(async (uid) => {
-            const count = await historyCollection.countDocuments({ userId: uid });
-            return { userId: uid, count };
-        }));
+        // Basic connectivity check
+        const historyCount = await db.collection('history').countDocuments();
+        const usersCount = await db.collection('users').countDocuments();
 
         return NextResponse.json({
-            databaseName: db.databaseName, // Show current DB name
-            currentUser: {
-                id: currentUserId,
-                email: session?.user?.email
+            status: 'ok',
+            databaseName: db.databaseName,
+            counts: {
+                history: historyCount,
+                users: usersCount
             },
-            existingDataOwners: stats
+            envVarDefined: !!process.env.MONGODB_URI
         });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            error: error.message,
+            stack: error.stack
+        }, { status: 500 });
     }
 }
