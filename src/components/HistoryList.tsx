@@ -92,6 +92,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
     const handleStatusChange = async (item: HistoryItem, newStatus: 'pending' | 'in-progress' | 'completed') => {
         if (!item.id || item.status === newStatus) return;
 
+        const updates: any = { status: newStatus };
+        if (newStatus === 'completed') {
+            updates.completedAt = new Date();
+        }
+
         // Optimistic Update
         setItems(prev => {
             // If we are filtering by status, and the new status doesn't match, remove it
@@ -99,11 +104,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                 return prev.filter(i => i.id !== item.id);
             }
             // Otherwise just update the status
-            return prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i);
+            return prev.map(i => i.id === item.id ? { ...i, ...updates } : i);
         });
 
         try {
-            await updateHistoryItem(item.id, { status: newStatus });
+            await updateHistoryItem(item.id, updates);
         } catch (error) {
             console.error('Status update error:', error);
             alert('상태 변경에 실패했습니다.');
@@ -386,8 +391,15 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
             return new Date(d);
         };
 
-        const dateA = getDate(a.createdAt);
-        const dateB = getDate(b.createdAt);
+        let dateA, dateB;
+
+        if (filter === 'completed') {
+            dateA = getDate(a.completedAt || a.updatedAt || a.createdAt);
+            dateB = getDate(b.completedAt || b.updatedAt || b.createdAt);
+        } else {
+            dateA = getDate(a.createdAt);
+            dateB = getDate(b.createdAt);
+        }
 
         return sortOrder === 'desc'
             ? dateB.getTime() - dateA.getTime()
@@ -550,10 +562,14 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                     {item.priority === 'high' && (
                                         <span style={{ fontSize: '0.8rem', color: '#ff4444', fontWeight: 'bold' }}>🔥 긴급</span>
                                     )}
+
+                                    {/* Only show Created Date (User Request) */}
                                     <span className={styles.date}>{formatDate(item.createdAt, item._id)}</span>
-                                    {item.status === 'completed' && item.completedAt && (
+
+                                    {/* Show Completed Date (Fallback to updatedAt for legacy items) */}
+                                    {item.status === 'completed' && (
                                         <span className={styles.date} style={{ color: '#4db6ac', marginLeft: '5px' }}>
-                                            (완료: {formatDate(item.completedAt)})
+                                            ✅ {formatDate(item.completedAt || item.updatedAt)}
                                         </span>
                                     )}
                                 </div>
@@ -680,98 +696,93 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
 
                             {/* Comments Section */}
                             <div className={styles.commentsSection}>
-                                <button
+                                {/* Always show comments (User Request) */}
+                                <div
                                     className={styles.commentToggleBtn}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setExpandedComments(prev => ({ ...prev, [item.id!]: !prev[item.id!] }));
-                                    }}
-                                    style={searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())) ? { color: '#ff4444', fontWeight: 'bold' } : {}}
+                                    style={{ cursor: 'default', background: 'transparent', paddingLeft: 0 }}
                                 >
                                     💬 댓글 {item.comments?.length || 0}
-                                    {searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())) && <span style={{ fontSize: '0.8em' }}> (검색됨)</span>}
-                                </button>
+                                    {searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())) && <span style={{ fontSize: '0.8em', color: '#ff4444' }}> (검색됨)</span>}
+                                </div>
 
-                                {(expandedComments[item.id!] || (searchTerm && item.comments?.some(c => c.content.toLowerCase().includes(searchTerm.toLowerCase())))) && (
-                                    <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
-                                        {/* Comment List */}
-                                        <div className={styles.commentList}>
-                                            {item.comments && item.comments.length > 0 ? (
-                                                item.comments.map(comment => (
-                                                    <div key={comment.id} className={styles.commentItem}
-                                                        style={searchTerm && comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ? { backgroundColor: 'rgba(255, 255, 0, 0.1)' } : {}}
-                                                    >
-                                                        <div className={styles.commentHeader}>
-                                                            <span className={styles.commentUser}>사용자</span>
-                                                            <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
-                                                            <div className={styles.commentActions}>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setEditingCommentId(comment.id);
-                                                                        setEditingCommentContent(comment.content);
-                                                                    }}
-                                                                    title="수정"
-                                                                >✏️</button>
-                                                                <button
-                                                                    onClick={() => handleDeleteComment(item.id!, comment.id)}
-                                                                    title="삭제"
-                                                                >🗑️</button>
-                                                            </div>
+                                <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
+                                    {/* Comment List */}
+                                    <div className={styles.commentList}>
+                                        {item.comments && item.comments.length > 0 ? (
+                                            item.comments.map(comment => (
+                                                <div key={comment.id} className={styles.commentItem}
+                                                    style={searchTerm && comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ? { backgroundColor: 'rgba(255, 255, 0, 0.1)' } : {}}
+                                                >
+                                                    <div className={styles.commentHeader}>
+                                                        <span className={styles.commentUser}>사용자</span>
+                                                        <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
+                                                        <div className={styles.commentActions}>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingCommentId(comment.id);
+                                                                    setEditingCommentContent(comment.content);
+                                                                }}
+                                                                title="수정"
+                                                            >✏️</button>
+                                                            <button
+                                                                onClick={() => handleDeleteComment(item.id!, comment.id)}
+                                                                title="삭제"
+                                                            >🗑️</button>
                                                         </div>
-                                                        {editingCommentId !== comment.id && (
-                                                            <div className={styles.commentBody}>
-                                                                <HighlightText text={comment.content} highlight={searchTerm} />
-                                                            </div>
-                                                        )}
-                                                        {editingCommentId === comment.id ? (
-                                                            <div className={styles.commentEditBox}>
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingCommentContent}
-                                                                    onChange={(e) => setEditingCommentContent(e.target.value)}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            handleEditComment(item.id!, comment.id);
-                                                                        } else if (e.key === 'Escape') {
-                                                                            setEditingCommentId(null);
-                                                                        }
-                                                                    }}
-                                                                    autoFocus
-                                                                />
-                                                                <button onClick={() => handleEditComment(item.id!, comment.id)}>저장</button>
-                                                                <button onClick={() => setEditingCommentId(null)}>취소</button>
-                                                            </div>
-                                                        ) : null}
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className={styles.noComments}>댓글이 없습니다.</div>
-                                            )}
-                                        </div>
-
-                                        {/* Add Comment Input */}
-                                        <div className={styles.commentInputBox}>
-                                            <input
-                                                type="text"
-                                                placeholder="댓글을 입력하세요..."
-                                                value={newComment[item.id!] || ''}
-                                                onChange={(e) => setNewComment(prev => ({ ...prev, [item.id!]: e.target.value }))}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault();
-                                                        handleAddComment(item.id!, newComment[item.id!] || '');
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                onClick={() => handleAddComment(item.id!, newComment[item.id!] || '')}
-                                                disabled={!newComment[item.id!]?.trim()}
-                                            >
-                                                등록
-                                            </button>
-                                        </div>
+                                                    {editingCommentId !== comment.id && (
+                                                        <div className={styles.commentBody}>
+                                                            <HighlightText text={comment.content} highlight={searchTerm} />
+                                                        </div>
+                                                    )}
+                                                    {editingCommentId === comment.id ? (
+                                                        <div className={styles.commentEditBox}>
+                                                            <input
+                                                                type="text"
+                                                                value={editingCommentContent}
+                                                                onChange={(e) => setEditingCommentContent(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        handleEditComment(item.id!, comment.id);
+                                                                    } else if (e.key === 'Escape') {
+                                                                        setEditingCommentId(null);
+                                                                    }
+                                                                }}
+                                                                autoFocus
+                                                            />
+                                                            <button onClick={() => handleEditComment(item.id!, comment.id)}>저장</button>
+                                                            <button onClick={() => setEditingCommentId(null)}>취소</button>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className={styles.noComments}>댓글이 없습니다.</div>
+                                        )}
                                     </div>
-                                )}
+
+                                    {/* Add Comment Input */}
+                                    <div className={styles.commentInputBox}>
+                                        <input
+                                            type="text"
+                                            placeholder="댓글을 입력하세요..."
+                                            value={newComment[item.id!] || ''}
+                                            onChange={(e) => setNewComment(prev => ({ ...prev, [item.id!]: e.target.value }))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleAddComment(item.id!, newComment[item.id!] || '');
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => handleAddComment(item.id!, newComment[item.id!] || '')}
+                                            disabled={!newComment[item.id!]?.trim()}
+                                        >
+                                            등록
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Extra Info */}
