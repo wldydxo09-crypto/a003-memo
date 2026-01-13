@@ -714,7 +714,6 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
                                                     style={searchTerm && comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ? { backgroundColor: 'rgba(255, 255, 0, 0.1)' } : {}}
                                                 >
                                                     <div className={styles.commentHeader}>
-                                                        <span className={styles.commentUser}>사용자</span>
                                                         <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
                                                         <div className={styles.commentActions}>
                                                             <button
