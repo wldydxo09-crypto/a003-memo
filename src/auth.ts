@@ -14,6 +14,17 @@ declare module "next-auth" {
     }
 }
 
+// Debug environment variables at startup (Safe for logs)
+console.log("[Auth Start] Debugging Environment Variables:");
+console.log("- GOOGLE_CLIENT_ID length:", process.env.GOOGLE_CLIENT_ID?.length || 0);
+console.log("- GOOGLE_CLIENT_SECRET length:", process.env.GOOGLE_CLIENT_SECRET?.length || 0);
+console.log("- AUTH_SECRET length:", process.env.AUTH_SECRET?.length || 0);
+console.log("- MONGODB_URI exists:", !!process.env.MONGODB_URI);
+
+if (!process.env.AUTH_SECRET) {
+    console.error("[Auth Start] CRITICAL: AUTH_SECRET is missing!");
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
     trustHost: true,
     adapter: MongoDBAdapter(clientPromise),
@@ -38,21 +49,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
         }),
     ],
+    // v5 requires explicitly setting the strategy if needed
     session: {
         strategy: "jwt",
     },
     callbacks: {
         async signIn({ user, account, profile }) {
-            console.log(`[NextAuth][SignIn] Attempting sign in for: ${user?.email}`);
-            if (!account) {
-                console.error("[NextAuth][SignIn] No account object provided");
-                return false;
-            }
+            console.log(`[NextAuth][signIn] User: ${user?.email}, Account: ${!!account}`);
             return true;
         },
         async jwt({ token, account, user }) {
             if (account && user) {
-                console.log(`[NextAuth][JWT] New session for: ${user.email}`);
+                console.log(`[NextAuth][jwt] Token generated for: ${user.email}`);
                 token.accessToken = account.access_token;
                 token.refreshToken = account.refresh_token;
                 token.id = user.id;
@@ -69,5 +77,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
     },
     secret: process.env.AUTH_SECRET,
-    debug: true,
+    debug: true, // Keep debug enabled to see warnings
 })
