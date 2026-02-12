@@ -41,10 +41,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         strategy: "jwt",
     },
     callbacks: {
+        async signIn({ user, account, profile }) {
+            console.log(`[NextAuth][SignIn] Attempt: ${user?.email}, provider: ${account?.provider}`);
+            return true;
+        },
         async jwt({ token, account, user }) {
             // Initial sign in
             if (account && user) {
-                console.log(`[NextAuth] Sign-in login: ${user.email}, ID: ${user.id}`);
+                console.log(`[NextAuth][JWT] Sign-in: ${user.email}, ID: ${user.id}`);
                 token.accessToken = account.access_token;
                 token.refreshToken = account.refresh_token;
                 token.id = user.id;
@@ -53,16 +57,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
         async session({ session, token }) {
             if (token && session.user) {
-                // Ensure we use the string ID format (fallback to sub)
                 session.user.id = (token.id || token.sub) as string;
                 session.accessToken = token.accessToken as string;
                 session.refreshToken = token.refreshToken as string;
-                console.log(`[NextAuth] Session created for ID: ${session.user.id}`);
             }
             return session;
         },
     },
-    debug: process.env.NODE_ENV === 'development',
+    debug: true,
     trustHost: true,
     secret: process.env.AUTH_SECRET,
 })
