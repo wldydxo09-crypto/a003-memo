@@ -68,7 +68,11 @@ export const fetchHistory = async (userId: string, filters: any = {}): Promise<H
     params.append('_t', Date.now().toString());
 
     const res = await fetch(`${API_BASE}/history?${params.toString()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch history');
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Fetch History Error:", res.status, errorData);
+        throw new Error(errorData.error || `Failed to fetch history: ${res.status}`);
+    }
 
     const data = await res.json();
     return data.map((item: any) => ({

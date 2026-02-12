@@ -68,22 +68,22 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('Calendar API Error:', error);
+        console.error('Calendar API [POST] Error:', error);
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Unknown Calendar API Error';
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            { error: errorMessage },
+            { status: error.response?.status || 500 }
         );
     }
 }
-// ... POST method ...
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const timeMin = searchParams.get('timeMin') || new Date().toISOString();
-        // Default to 1 month from now if not specified? Or let caller decide. 
-        // We'll require timeMax or default to +1 month.
         const timeMax = searchParams.get('timeMax');
+
+        console.log('Calendar GET Params:', { timeMin, timeMax });
 
         // 1. Get Token from Session
         const session = await auth();
@@ -127,9 +127,10 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Calendar List Error:', error);
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to fetch calendar events';
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            { error: errorMessage },
+            { status: error.response?.status || 500 }
         );
     }
 }

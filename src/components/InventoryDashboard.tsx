@@ -49,18 +49,20 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
     const [mermaidCode, setMermaidCode] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState(false);
 
+    const loadFeatures = async () => {
+        try {
+            setLoading(true);
+            const items = await fetchFeatures(userId);
+            setFeatures(items);
+        } catch (e) {
+            console.error("Failed to load features", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Initial Load
     useEffect(() => {
-        const loadFeatures = async () => {
-            try {
-                const items = await fetchFeatures(userId);
-                setFeatures(items);
-            } catch (e) {
-                console.error("Failed to load features", e);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadFeatures();
     }, [userId]);
 
@@ -148,6 +150,7 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
             } else {
                 await addFeature(data);
             }
+            await loadFeatures(); // Refresh list
             handleCloseModal();
         } catch (error: any) {
             console.error('Submit error:', error);
@@ -339,8 +342,10 @@ export default function InventoryDashboard({ userId }: InventoryDashboardProps) 
 
             {/* Modal */}
             {isModalOpen && (
-                <div className={styles.modalOverlay} onClick={handleCloseModal}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                <div className={styles.modalOverlay} onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) handleCloseModal();
+                }}>
+                    <div className={styles.modal} onMouseDown={e => e.stopPropagation()}>
                         <h3 className={styles.modalTitle}>{editingId ? '기능 수정' : '새 기능 등록'}</h3>
                         <form onSubmit={handleSubmit}>
                             <div className={styles.formGroup}>

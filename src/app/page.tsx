@@ -370,7 +370,7 @@ function HomeContent() {
                     </div>
                     <button
                       onClick={() => {
-                        window.location.href = '/api/auth/google';
+                        window.location.href = '/api/auth/signin/google';
                       }}
                       style={{ padding: '6px 12px', background: 'var(--primary)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
                     >

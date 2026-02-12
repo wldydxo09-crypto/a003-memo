@@ -6,6 +6,8 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
+        console.log(`[API/history] GET request. UserId: ${userId}`);
+
         const status = searchParams.get('status');
         const menuId = searchParams.get('menuId');
         const label = searchParams.get('label');
@@ -38,11 +40,22 @@ export async function GET(request: Request) {
             .sort({ createdAt: -1 })
             .toArray();
 
+        // Helper to normalize Firestore-style timestamps
+        const normalizeDate = (val: any) => {
+            if (!val) return null;
+            if (val.seconds !== undefined) return new Date(val.seconds * 1000).toISOString();
+            if (val instanceof Date) return val.toISOString();
+            return val; // Already a string or other format
+        };
+
         // Convert _id to string id for frontend compatibility
         const formattedItems = items.map(item => ({
             ...item,
-            id: item.id || item._id.toString(), // Use existing 'id' migrated from Firebase or _id
-            _id: item._id.toString()
+            id: item.id || item._id.toString(),
+            _id: item._id.toString(),
+            createdAt: normalizeDate(item.createdAt),
+            updatedAt: normalizeDate(item.updatedAt),
+            completedAt: normalizeDate(item.completedAt)
         }));
 
         return NextResponse.json(formattedItems);

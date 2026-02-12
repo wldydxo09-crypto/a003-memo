@@ -452,7 +452,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
     if (!isOpen) return null;
 
     return (
-        <div className={styles.overlay} onClick={(e) => {
+        <div className={styles.overlay} onMouseDown={(e) => {
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className={styles.modal}>

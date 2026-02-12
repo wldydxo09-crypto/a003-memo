@@ -7,6 +7,12 @@ import { useEffect, useRef } from 'react';
  */
 export function useModalBack(isOpen: boolean, onClose: () => void) {
     const closedByBack = useRef(false);
+    const onCloseRef = useRef(onClose);
+
+    // Always keep the ref updated with the latest callback
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     useEffect(() => {
         if (isOpen) {
@@ -16,7 +22,10 @@ export function useModalBack(isOpen: boolean, onClose: () => void) {
 
             const handlePopState = () => {
                 closedByBack.current = true;
-                onClose();
+                // Use the ref to call the latest close function without re-running the effect
+                if (onCloseRef.current) {
+                    onCloseRef.current();
+                }
             };
 
             window.addEventListener('popstate', handlePopState);
@@ -29,5 +38,5 @@ export function useModalBack(isOpen: boolean, onClose: () => void) {
                 }
             };
         }
-    }, [isOpen, onClose]); // ensuring onClose is stable is important used by caller
+    }, [isOpen]); // onClose is intentionally omitted to prevent re-running on re-renders
 }

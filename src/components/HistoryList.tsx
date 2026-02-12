@@ -72,6 +72,11 @@ export default function HistoryList({ userId, menuId, subMenuId, initialFilter =
         const loadItems = async () => {
             setLoading(true);
             try {
+                if (!userId) {
+                    console.warn("HistoryList: userId is missing/empty", userId);
+                    setItems([]);
+                    return;
+                }
                 // Fetch ALL items for this context (ignore status filter in API) to calculate counts
                 const fetchedItems = await fetchHistory(userId, {
                     // status: filter === 'all' ? undefined : filter, // Removed to fetch all

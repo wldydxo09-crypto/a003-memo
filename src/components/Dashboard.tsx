@@ -115,7 +115,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, re
             } else {
                 if (data.needAuth) {
                     if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
-                        window.open('/api/auth/google', '_blank');
+                        window.open('/api/auth/signin/google', '_blank');
                     }
                 } else {
                     alert(`일정 추가 실패: ${data.error}`);
@@ -136,6 +136,10 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, re
         const loadStats = async () => {
             setStatsLoading(true);
             try {
+                if (!userId) {
+                    setStats({ total: 0, pending: 0, inProgress: 0, completed: 0 });
+                    return;
+                }
                 const items = await fetchHistory(userId); // Fetch all for stats
                 const counts = {
                     total: items.length,
@@ -209,11 +213,16 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, re
                 timeMax = end.toISOString();
             }
 
-            const res = await fetch(`/api/calendar?timeMin=${timeMin}${timeMax ? `&timeMax=${timeMax}` : ''}`, { cache: 'no-store' });
+            const res = await fetch(`/api/calendar?timeMin=${encodeURIComponent(timeMin)}${timeMax ? `&timeMax=${encodeURIComponent(timeMax)}` : ''}`, { cache: 'no-store' });
             const data = await res.json();
 
             if (data.success) {
                 setEvents(data.events);
+            } else if (data.needAuth) {
+                console.log('Calendar authentication required');
+                // We don't alert here to avoid spamming the user on page load
+            } else {
+                console.error("Calendar fetch error:", data.error);
             }
         } catch (error) {
             console.error("Failed to fetch calendar", error);
@@ -465,7 +474,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, re
             {/* Event Creation Modal - Portaled to Body to avoid Z-Index/Overflow issues */}
             {isEventModalOpen && eventModalDate && typeof document !== 'undefined' && createPortal(
                 <div
-                    onClick={(e) => {
+                    onMouseDown={(e) => {
                         if (e.target === e.currentTarget) setIsEventModalOpen(false);
                     }}
                     style={{
