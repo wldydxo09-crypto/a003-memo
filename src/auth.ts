@@ -63,7 +63,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
     },
     debug: process.env.NODE_ENV === 'development',
-    pages: {
-        error: '/api/auth/error', // Optional: customize error page
-    }
+    trustHost: true,
 })
