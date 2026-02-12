@@ -16,13 +16,15 @@ declare module "next-auth" {
 
 // Debug environment variables at startup (Safe for logs)
 console.log("[Auth Start] Debugging Environment Variables:");
-console.log("- GOOGLE_CLIENT_ID length:", process.env.GOOGLE_CLIENT_ID?.length || 0);
-console.log("- GOOGLE_CLIENT_SECRET length:", process.env.GOOGLE_CLIENT_SECRET?.length || 0);
+console.log("- GOOGLE_CLIENT_ID exists:", !!process.env.GOOGLE_CLIENT_ID);
 console.log("- AUTH_SECRET length:", process.env.AUTH_SECRET?.length || 0);
-console.log("- MONGODB_URI exists:", !!process.env.MONGODB_URI);
+console.log("- NEXTAUTH_SECRET length:", process.env.NEXTAUTH_SECRET?.length || 0);
 
-if (!process.env.AUTH_SECRET) {
-    console.error("[Auth Start] CRITICAL: AUTH_SECRET is missing!");
+// Fallback for secret
+const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+
+if (!secret) {
+    console.error("[Auth Start] CRITICAL: Neither AUTH_SECRET nor NEXTAUTH_SECRET is set!");
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -49,20 +51,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
         }),
     ],
-    // v5 requires explicitly setting the strategy if needed
     session: {
         strategy: "jwt",
     },
     callbacks: {
-        async signIn({ user, account, profile }) {
-            console.log(`[NextAuth][signIn] User: ${user?.email}, Account: ${!!account}`);
+        async signIn({ user, account }) {
+            console.log(`[NextAuth][signIn] Success for: ${user?.email}`);
             return true;
         },
         async jwt({ token, account, user }) {
             if (account && user) {
-                console.log(`[NextAuth][jwt] Token generated for: ${user.email}`);
                 token.accessToken = account.access_token;
-                // Only overwrite if we actually get a new refresh token
                 if (account.refresh_token) {
                     token.refreshToken = account.refresh_token;
                 }
@@ -79,6 +78,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return session;
         },
     },
-    secret: process.env.AUTH_SECRET,
-    debug: true, // Keep debug enabled to see warnings
+    secret: secret,
+    debug: true,
 })
