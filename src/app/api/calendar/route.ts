@@ -68,11 +68,15 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('Calendar API [POST] Error:', error);
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Unknown Calendar API Error';
+        console.error('Calendar API Error:', error);
+        const isAuthError = error.message?.includes('invalid_grant') || error.response?.data?.error === 'invalid_grant';
+
         return NextResponse.json(
-            { error: errorMessage },
-            { status: error.response?.status || 500 }
+            {
+                error: error.message || 'Calendar API Error',
+                needAuth: isAuthError
+            },
+            { status: isAuthError ? 401 : (error.response?.status || 500) }
         );
     }
 }
@@ -127,10 +131,13 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Calendar List Error:', error);
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to fetch calendar events';
+        const isAuthError = error.message?.includes('invalid_grant') || error.response?.data?.error === 'invalid_grant';
         return NextResponse.json(
-            { error: errorMessage },
-            { status: error.response?.status || 500 }
+            {
+                error: error.message || 'Failed to fetch calendar events',
+                needAuth: isAuthError
+            },
+            { status: isAuthError ? 401 : (error.response?.status || 500) }
         );
     }
 }
@@ -181,9 +188,13 @@ export async function DELETE(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Calendar Delete Error:', error);
+        const isAuthError = error.message?.includes('invalid_grant') || error.response?.data?.error === 'invalid_grant';
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            {
+                error: error.message || 'Delete failed',
+                needAuth: isAuthError
+            },
+            { status: isAuthError ? 401 : (error.response?.status || 500) }
         );
     }
 }

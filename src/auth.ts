@@ -62,7 +62,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (account && user) {
                 console.log(`[NextAuth][jwt] Token generated for: ${user.email}`);
                 token.accessToken = account.access_token;
-                token.refreshToken = account.refresh_token;
+                // Only overwrite if we actually get a new refresh token
+                if (account.refresh_token) {
+                    token.refreshToken = account.refresh_token;
+                }
                 token.id = user.id;
             }
             return token;
