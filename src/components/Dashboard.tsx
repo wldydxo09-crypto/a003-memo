@@ -6,6 +6,8 @@ import { fetchHistory } from '@/lib/dataService';
 import { useRouter } from 'next/navigation';
 import styles from './Dashboard.module.css';
 
+import { signIn } from 'next-auth/react';
+
 interface DashboardProps {
     userId: string;
     onOpenWrite: (menuId: string) => void;
@@ -115,7 +117,7 @@ export default function Dashboard({ userId, onOpenWrite, onNavigateToHistory, re
             } else {
                 if (data.needAuth) {
                     if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
-                        window.open('/api/auth/signin/google', '_blank');
+                        signIn('google');
                     }
                 } else {
                     alert(`일정 추가 실패: ${data.error}`);

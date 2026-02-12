@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { addHistoryItem, uploadImages } from '@/lib/dataService';
 import styles from './TaskInput.module.css';
+import { signIn } from 'next-auth/react';
 
 interface TaskInputProps {
     userId: string;
@@ -148,7 +149,7 @@ export default function TaskInput({ userId, menuId, menuName }: TaskInputProps) 
                 setScheduleData(null); // Clear after success
             } else if (result.needAuth) {
                 if (confirm('구글 캘린더 연동이 필요합니다. 로그인 페이지로 이동할까요?')) {
-                    window.location.href = '/api/auth/signin/google';
+                    signIn('google');
                 }
             } else {
                 alert('등록 실패: ' + result.error);

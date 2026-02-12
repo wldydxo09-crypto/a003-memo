@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { HistoryItem, addHistoryItem, checkDuplicateHistory } from '@/lib/dataService';
 import { MENUS } from '@/lib/menus';
 import styles from './WriteModal.module.css';
+import { signIn } from 'next-auth/react';
 
 interface WriteModalProps {
     isOpen: boolean;
@@ -321,7 +322,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
                     } else {
                         if (calData.needAuth) {
                             if (confirm('구글 캘린더 연동이 필요합니다. 연동하시겠습니까?')) {
-                                window.open('/api/auth/signin/google', '_blank');
+                                signIn('google');
                             }
                         } else {
                             console.error(`Calendar save failed: ${calData.error}`);
@@ -376,7 +377,7 @@ export default function WriteModal({ isOpen, onClose, userId, initialMenuId = 'w
 
                     if (uploadError.message === 'NEED_AUTH') {
                         if (confirm('Google Drive 연동이 필요합니다. 연동하시겠습니까?')) {
-                            window.open('/api/auth/signin/google', '_blank');
+                            signIn('google');
                         }
                         // Still save text without images
                     } else {
