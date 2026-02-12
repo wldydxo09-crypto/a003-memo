@@ -15,6 +15,7 @@ declare module "next-auth" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    trustHost: true,
     adapter: MongoDBAdapter(clientPromise),
     providers: [
         Google({
@@ -42,13 +43,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     callbacks: {
         async signIn({ user, account, profile }) {
-            console.log(`[NextAuth][SignIn] Attempt: ${user?.email}, provider: ${account?.provider}`);
+            console.log(`[NextAuth][SignIn] Attempting sign in for: ${user?.email}`);
+            if (!account) {
+                console.error("[NextAuth][SignIn] No account object provided");
+                return false;
+            }
             return true;
         },
         async jwt({ token, account, user }) {
-            // Initial sign in
             if (account && user) {
-                console.log(`[NextAuth][JWT] Sign-in: ${user.email}, ID: ${user.id}`);
+                console.log(`[NextAuth][JWT] New session for: ${user.email}`);
                 token.accessToken = account.access_token;
                 token.refreshToken = account.refresh_token;
                 token.id = user.id;
@@ -64,7 +68,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return session;
         },
     },
-    debug: true,
-    trustHost: true,
     secret: process.env.AUTH_SECRET,
+    debug: true,
 })
